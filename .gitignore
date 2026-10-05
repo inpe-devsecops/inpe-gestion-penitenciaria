@@ -1,0 +1,13 @@
+node_modules/
+dist/
+coverage/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+.vscode/
+.idea/
+
+# Datos simulados: se regeneran con tools/generador (no subir 100+ MB de datos personales ficticios)
+datos/*.json

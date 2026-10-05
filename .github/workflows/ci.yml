@@ -1,0 +1,127 @@
+name: CI/CD DevSecOps
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend - lint, build y pruebas
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+      - run: npm test
+      - name: Auditoría de dependencias (solo producción, severidad alta)
+        run: npm audit --omit=dev --audit-level=high
+
+  frontend:
+    name: Frontend - build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - run: npm audit --omit=dev --audit-level=high
+
+  sast:
+    name: SAST - Semgrep
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@v4
+      - name: Semgrep (falla con hallazgos de severidad ERROR)
+        run: semgrep scan --config p/javascript --config p/typescript --config p/nodejs --config p/react --config p/secrets --severity ERROR --error --exclude datos
+
+  secretos:
+    name: Detección de secretos - Gitleaks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Gitleaks
+        run: docker run --rm -v "${{ github.workspace }}:/repo" zricethezav/gitleaks:latest detect --source /repo --no-git --redact -v
+
+  imagen:
+    name: Imagen Docker del backend
+    needs: [backend, frontend, sast, secretos]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t inpe-devsecops-backend:${{ github.sha }} backend
+
+  deploy-dev:
+    name: Despliegue a Desarrollo (Render)
+    needs: imagen
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: desarrollo
+    env:
+      DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_DEV }}
+      URL: ${{ vars.DEV_URL }}
+    steps:
+      - name: Disparar despliegue
+        run: |
+          if [ -z "$DEPLOY_HOOK" ]; then echo "RENDER_DEPLOY_HOOK_DEV no configurado: se omite"; exit 0; fi
+          curl -fsS -X POST "$DEPLOY_HOOK" > /dev/null
+      - name: Smoke test /health
+        run: |
+          if [ -z "$URL" ]; then echo "DEV_URL no configurado: se omite"; exit 0; fi
+          for i in $(seq 1 30); do curl -fsS "$URL/health" && exit 0; sleep 20; done; exit 1
+
+  dast:
+    name: DAST - OWASP ZAP (baseline sobre DEV)
+    needs: deploy-dev
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: ZAP baseline
+        if: vars.DEV_URL != ''
+        uses: zaproxy/action-baseline@v0.14.0
+        with:
+          target: ${{ vars.DEV_URL }}
+          rules_file_name: .zap/reglas.tsv
+          fail_action: true
+          allow_issue_writing: false
+
+  deploy-prod:
+    name: Despliegue a Producción (Render)
+    needs: dast
+    runs-on: ubuntu-latest
+    environment: produccion
+    env:
+      DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_PROD }}
+    steps:
+      - run: |
+          if [ -z "$DEPLOY_HOOK" ]; then echo "RENDER_DEPLOY_HOOK_PROD no configurado: se omite"; exit 0; fi
+          curl -fsS -X POST "$DEPLOY_HOOK" > /dev/null
