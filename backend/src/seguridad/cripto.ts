@@ -3,6 +3,7 @@ import { createCipheriv, createDecipheriv, createHmac, randomBytes } from 'node:
 // Cifrado selectivo de campos sensibles (RNF01): AES-256-GCM con IV aleatorio por valor.
 // Formato almacenado: v1:<iv base64>:<tag base64>:<texto cifrado base64>
 const VERSION = 'v1';
+const TAG_LENGTH = 16;
 
 export function cifrar(texto: string, clave: Buffer): string {
   const iv = randomBytes(12);
@@ -15,8 +16,10 @@ export function cifrar(texto: string, clave: Buffer): string {
 export function descifrar(valor: string, clave: Buffer): string {
   const [version, iv, tag, datos] = valor.split(':');
   if (version !== VERSION || !iv || !tag || !datos) throw new Error('Formato de dato cifrado inválido');
-  const d = createDecipheriv('aes-256-gcm', clave, Buffer.from(iv, 'base64'));
-  d.setAuthTag(Buffer.from(tag, 'base64'));
+  const tagBuf = Buffer.from(tag, 'base64');
+  if (tagBuf.length !== TAG_LENGTH) throw new Error('Formato de dato cifrado inválido');
+  const d = createDecipheriv('aes-256-gcm', clave, Buffer.from(iv, 'base64'), { authTagLength: TAG_LENGTH });
+  d.setAuthTag(tagBuf);
   return Buffer.concat([d.update(Buffer.from(datos, 'base64')), d.final()]).toString('utf8');
 }
 
