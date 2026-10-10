@@ -1,6 +1,7 @@
-import { createCipheriv, createDecipheriv, createHmac, randomBytes } from 'node:crypto';
+import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
 
-// Cifrado selectivo de campos sensibles (RNF01): AES-256-GCM con IV aleatorio por valor.
+// Cifrado de texto libre sensible en reposo: AES-256-GCM con IV aleatorio por valor.
+// Se aplica a los fundamentos de solicitudes y decisiones, que pueden describir la situación del interno.
 // Formato almacenado: v1:<iv base64>:<tag base64>:<texto cifrado base64>
 const VERSION = 'v1';
 const TAG_LENGTH = 16;
@@ -21,9 +22,4 @@ export function descifrar(valor: string, clave: Buffer): string {
   const d = createDecipheriv('aes-256-gcm', clave, Buffer.from(iv, 'base64'), { authTagLength: TAG_LENGTH });
   d.setAuthTag(tagBuf);
   return Buffer.concat([d.update(Buffer.from(datos, 'base64')), d.final()]).toString('utf8');
-}
-
-// Índice ciego (RNF02): permite buscar por documento sin descifrar toda la colección.
-export function indiceCiego(valor: string, clave: Buffer): string {
-  return createHmac('sha256', clave).update(valor.trim().toUpperCase()).digest('hex');
 }

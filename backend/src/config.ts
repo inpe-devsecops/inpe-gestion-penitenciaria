@@ -9,8 +9,8 @@ const esquema = z.object({
   MONGODB_URI: z.string().min(1, 'MONGODB_URI es obligatorio'),
   JWT_SECRET: z.string().min(32, 'JWT_SECRET debe tener al menos 32 caracteres'),
   DATA_KEY: clave32('DATA_KEY'),
-  HMAC_KEY: clave32('HMAC_KEY'),
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
+  ALERT_JOB_INTERVAL_MIN: z.coerce.number().int().min(0).default(15),
 });
 
 export interface Config {
@@ -19,8 +19,9 @@ export interface Config {
   mongoUri: string;
   jwtSecret: string;
   dataKey: Buffer;
-  hmacKey: Buffer;
   corsOrigin: string[];
+  /** Cada cuántos minutos se reevalúan los umbrales de alerta (0 = desactivado). */
+  intervaloAlertasMin: number;
 }
 
 // Falla al iniciar si falta un secreto: valores por defecto seguros (fail-safe defaults).
@@ -37,7 +38,7 @@ export function cargarConfig(env: NodeJS.ProcessEnv = process.env): Config {
     mongoUri: e.MONGODB_URI,
     jwtSecret: e.JWT_SECRET,
     dataKey: Buffer.from(e.DATA_KEY, 'base64'),
-    hmacKey: Buffer.from(e.HMAC_KEY, 'base64'),
     corsOrigin: e.CORS_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean),
+    intervaloAlertasMin: e.ALERT_JOB_INTERVAL_MIN,
   };
 }

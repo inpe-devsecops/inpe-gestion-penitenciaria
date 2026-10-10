@@ -1,6 +1,6 @@
 {
   "name": "inpe-devsecops-backend",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "API REST de inpe-devsecops: gestión segura de la población penitenciaria",
   "main": "dist/server.js",
@@ -9,8 +9,9 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "lint": "eslint .",
-    "test": "jest --coverage",
-    "seed": "tsx src/scripts/seed.ts"
+    "test": "jest --coverage --runInBand",
+    "migrate": "tsx src/db/migrar.ts",
+    "seed": "tsx src/db/seed.ts"
   },
   "engines": {
     "node": ">=20"
