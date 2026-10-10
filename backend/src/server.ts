@@ -9,8 +9,10 @@ async function main() {
   const config = cargarConfig();
   mongoose.set('strictQuery', true);
   await mongoose.connect(config.mongoUri);
-  const aplicadas = await migrar(mongoose.connection.db!);
-  if (aplicadas.length) console.log(`Migraciones aplicadas: ${aplicadas.join(', ')}`);
+  if (config.migrarAlIniciar) {
+    const aplicadas = await migrar(mongoose.connection.db!);
+    if (aplicadas.length) console.log(`Migraciones aplicadas: ${aplicadas.join(', ')}`);
+  }
 
   const app = crearApp({ config, baseDeDatosLista: () => mongoose.connection.readyState === 1 });
   const servidor = app.listen(config.port, () => console.log(`inpe-devsecops API escuchando en el puerto ${config.port}`));

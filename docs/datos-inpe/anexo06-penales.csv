@@ -1,0 +1,70 @@
+oficina_regional,departamento,establecimiento,capacidad_albergue,poblacion_penal,sobrepoblacion,hacinamiento_pct,hacinado
+Norte,Tumbes,E.P. de Tumbes,576,1287,711,123,SI
+Norte,Piura,E.P. de Piura,1370,4444,3074,224,SI
+Norte,Piura,E.P. de Sullana,194,228,34,18,NO
+Norte,Lambayeque,E.P. de Chiclayo,1143,4119,2976,260,SI
+Norte,La Libertad,E.P. de Trujillo,1518,6308,4790,316,SI
+Norte,La Libertad,E.P. de Mujeres de Trujillo,296,585,289,98,SI
+Norte,La Libertad,E.P. de Pacasmayo,72,107,35,49,SI
+Norte,Cajamarca,E.P. de Cajamarca,1512,2427,915,61,SI
+Norte,Cajamarca,E.P. de Chota,65,147,82,126,SI
+Norte,Cajamarca,E.P. de Jaén,50,215,165,330,SI
+Norte,Cajamarca,E.P. de San Ignacio,150,66,-84,-56,NO
+Lima,Ancash,E.P de Huaraz,598,1266,668,112,SI
+Lima,Ancash,E.P. de Chimbote,1144,3327,2183,191,SI
+Lima,Prov. Const. del Callao,E.P. del Callao,572,2989,2417,423,SI
+Lima,Prov. Const. del Callao,CEREC - Base Naval,8,5,-3,-37,NO
+Lima,Lima,E.P. de Mujeres de Chorrillos,450,813,363,81,SI
+Lima,Lima,E.P. Anexo de Mujeres de Chorrillos,288,688,400,139,SI
+Lima,Lima,E.P. de Lurigancho,3204,10013,6809,213,SI
+Lima,Lima,E.P. Miguel Castro Castro,1142,5432,4290,376,SI
+Lima,Lima,E.P. Virgen de Fátima,548,381,-167,-30,NO
+Lima,Lima,E.P. de Ancón,1620,2450,830,51,SI
+Lima,Lima,E.P. de Barbadillo,3,4,1,33,SI
+Lima,Lima,E.P. Modelo Ancon II - S.M.V.C.,2216,1998,-218,-10,NO
+Lima,Lima,E.P. Virgen de la Merced,42,34,-8,-19,NO
+Lima,Lima,E.P. de Huacho,644,2216,1572,244,SI
+Lima,Lima,E.P. de Cañete,1024,3921,2897,283,SI
+Lima,Lima,E.P. de Huaral,1029,3831,2802,272,SI
+Lima,Ica,E.P. de Ica,1924,5399,3475,181,SI
+Lima,Ica,E.P. de Chincha,1152,3573,2421,210,SI
+Sur,Arequipa,E.P. de Arequipa,667,2473,1806,271,SI
+Sur,Arequipa,E.P. de Mujeres de Arequipa,67,170,103,154,SI
+Sur,Arequipa,E.P. de Camaná,78,392,314,403,SI
+Sur,Moquegua,E.P. de Moquegua,178,362,184,103,SI
+Sur,Tacna,E.P. de Tacna,222,1195,973,438,SI
+Sur,Tacna,E.P de Mujeres de Tacna,40,116,76,190,SI
+Centro,Junín,E.P. de Huancayo,680,2386,1706,251,SI
+Centro,Junín,E.P. Mujeres de Concepción,105,51,-54,-51,NO
+Centro,Junín,E.P. de Chanchamayo,120,552,432,360,SI
+Centro,Junín,E.P. de Jauja,373,200,-173,-46,NO
+Centro,Junín,E.P. de Tarma,48,136,88,183,SI
+Centro,Junín,E.P. de la Oroya,64,101,37,58,SI
+Centro,Junín,E.P. de Río Negro,216,858,642,297,SI
+Centro,Huancavelica,E.P. de Huancavelica,60,290,230,383,SI
+Centro,Ayacucho,E.P. de Ayacucho,644,2641,1997,310,SI
+Centro,Ayacucho,E.P. de Huanta,42,146,104,248,SI
+Oriente,Huánuco,E.P. de Huánuco,1344,3219,1875,140,SI
+Oriente,Pasco,E.P. de Cerro de Pasco,96,73,-23,-24,NO
+Oriente,Pasco,E.P. de Cochamarca,1224,1054,-170,-14,NO
+Oriente,Ucayali,E.P. de Pucallpa,576,2867,2291,398,SI
+Sur Oriente,Apurímac,E.P. de Abancay,90,472,382,424,SI
+Sur Oriente,Apurímac,E.P. de Andahuaylas,248,616,368,148,SI
+Sur Oriente,Cusco,E.P. de Cusco,1616,3602,1986,123,SI
+Sur Oriente,Cusco,E.P. de Mujeres de Cusco,198,218,20,10,NO
+Sur Oriente,Cusco,E.P. de Sicuani,96,260,164,171,SI
+Sur Oriente,Cusco,E.P. de Quillabamba,80,352,272,340,SI
+Sur Oriente,Madre de Dios,E.P. de Puerto Maldonado,590,1270,680,115,SI
+Nor Oriente,San Martín,E.P. de Moyobamba,675,979,304,45,SI
+Nor Oriente,San Martín,E.P. de Juanjui,970,980,10,1,NO
+Nor Oriente,San Martín,E.P. de Tarapoto,222,422,200,90,SI
+Nor Oriente,San Martín,E.P. de Sananguillo,966,864,-102,-11,NO
+Nor Oriente,Loreto,E.P. de Iquitos,1392,1379,-13,-1,NO
+Nor Oriente,Loreto,E.P. de Mujeres de Iquitos,78,81,3,4,NO
+Nor Oriente,Loreto,E.P. de Yurimaguas,406,419,13,3,NO
+Nor Oriente,Amazonas,E.P. de Chachapoyas,732,881,149,20,SI
+Nor Oriente,Amazonas,E.P. de Bagua Grande,119,422,303,255,SI
+Altiplano,Puno,E.P. de Puno,1002,1218,216,22,SI
+Altiplano,Puno,E.P. de Lampa,252,217,-35,-14,NO
+Altiplano,Puno,E.P. de Juliaca,420,1283,863,205,SI
+Altiplano,Tacna,E.P. de Challapalca,214,227,13,6,NO

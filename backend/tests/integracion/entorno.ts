@@ -13,7 +13,7 @@ export const PASSWORD = 'Prueba#Segura2026';
 
 export const config: Config = {
   nodeEnv: 'test', port: 0, mongoUri: '', jwtSecret: 'secreto-de-pruebas-con-mas-de-32-caracteres!!',
-  dataKey: randomBytes(32), corsOrigin: ['http://localhost:5173'], intervaloAlertasMin: 0,
+  dataKey: randomBytes(32), corsOrigin: ['http://localhost:5173'], intervaloAlertasMin: 0, migrarAlIniciar: false,
 };
 
 export async function prepararBase(nombre: string) {

@@ -9,12 +9,12 @@
 
 ## Mensajes de commit
 
-`tipo(alcance): descripción`, por ejemplo `feat(internos): registrar egreso (HU07)`, `fix(auth): ...`, `test(seguridad): ...`, `docs: ...`.
+`tipo(alcance): descripción`, por ejemplo `feat(traslados): ejecutar traslado (RF-24)`, `fix(auth): ...`, `test(seguridad): ...`, `docs: ...`.
 
 ## Antes de abrir un pull request
 
 ```bash
-cd backend && npm run lint && npm test
+cd backend && npm run lint && npm test      # requiere MongoDB local (MONGODB_URI_TEST)
 cd ../frontend && npm run build
 ```
 
@@ -22,4 +22,4 @@ Completa la lista de verificación de seguridad de la plantilla del pull request
 
 ## Tablero
 
-Las historias de usuario (HU01–HU16 del informe) están como *issues* en GitHub Projects, con las columnas Pendiente → En progreso → En revisión → Hecho.
+Los requerimientos (RF-01 a RF-25, RNF-01 a RNF-25) y las historias de usuario por rol del Trabajo Parcial (Anexo D) están como *issues* en GitHub Projects, con las columnas Pendiente → En progreso → En revisión → Hecho.

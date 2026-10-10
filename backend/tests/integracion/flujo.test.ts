@@ -84,6 +84,30 @@ describe('Alertas (RF-07 a RF-09)', () => {
   });
 });
 
+describe('Catálogo de establecimientos (RF-02, RF-03, RNF-19)', () => {
+  const nuevo = {
+    nombre: 'E.P. de Prueba de Ica', oficinaId: 'LIMA', departamento: 'Ica', latitud: -14.07, longitud: -75.73,
+    capacidad: 500, poblacion: 120, techoSeguridad: 'MEDIANA', regimenesAdmitidos: ['MINIMA', 'MEDIANA'],
+    generoPoblacion: 'MASCULINO', fasesTratamiento: ['ORDINARIO', 'CONFIANZA'], proporcionAltoRiesgo: 0.1,
+  };
+
+  it('el central registra un establecimiento nuevo sin cambiar la estructura y queda en su serie', async () => {
+    const r = await request(app).post('/api/establecimientos').set('Authorization', central).send(nuevo).expect(201);
+    expect(r.body).toMatchObject({ id: 'EP-PRUEBAICA', cupoLibre: 380, nivel: null });
+    const serie = await request(app).get(`/api/establecimientos/${r.body.id}/serie`).set('Authorization', central).expect(200);
+    expect(serie.body).toEqual([expect.objectContaining({ poblacion: 120, capacidad: 500 })]);
+    await request(app).post('/api/establecimientos').set('Authorization', regionalLima).send(nuevo).expect(403);
+  });
+
+  it('rechaza regímenes por encima del techo de seguridad y audita los cambios con valor anterior', async () => {
+    await request(app).patch('/api/establecimientos/EP-PRUEBAICA').set('Authorization', central)
+      .send({ regimenesAdmitidos: ['MAXIMA'] }).expect(422);
+    await request(app).patch('/api/establecimientos/EP-PRUEBAICA').set('Authorization', central).send({ activo: false }).expect(200);
+    const reg = await Auditoria.findOne({ accion: 'ACTUALIZAR_ESTABLECIMIENTO', entidad_id: 'EP-PRUEBAICA' }).lean();
+    expect(reg).toMatchObject({ valor_anterior: { activo: true }, valor_nuevo: { activo: false } });
+  });
+});
+
 describe('Flujo del traslado con segregación de funciones (RF-11 a RF-24)', () => {
   let internoLima: string;
   let solicitudId: string;
@@ -105,19 +129,20 @@ describe('Flujo del traslado con segregación de funciones (RF-11 a RF-24)', () 
       .send({ internoId: otro!._id, causal: 'HACINAMIENTO', fundamento: 'Intento fuera del ámbito regional asignado' }).expect(403);
   });
 
-  it('registra la solicitud y conserva la evaluación completa de los 69 destinos (RF-11, RF-19)', async () => {
+  it('registra la solicitud y conserva la evaluación de todos los establecimientos (RF-11, RF-19)', async () => {
     const r = await request(app).post('/api/traslados').set('Authorization', regionalLima)
       .send({ internoId: internoLima, causal: 'HACINAMIENTO', fundamento: 'Lurigancho supera el 200 % de hacinamiento según el panel.' }).expect(201);
     solicitudId = r.body.id;
     expect(r.body).toMatchObject({ estado: 'EVALUADA', origenId: 'EP-LURIGANCHO', fundamento: expect.stringMatching(/Lurigancho/) });
-    expect(r.body.evaluaciones).toHaveLength(69);
+    const total = await Establecimiento.countDocuments();
+    expect(r.body.evaluaciones).toHaveLength(total);
     const elegibles = r.body.evaluaciones.filter((e: { elegible: boolean }) => e.elegible);
     expect(elegibles.length).toBeGreaterThan(0);
     expect(elegibles[0]).toMatchObject({ posicion: 1, destinoId: r.body.destinoRecomendadoId });
     expect(Object.keys(elegibles[0].aportes)).toEqual(['cupo', 'hacinamiento', 'distancia', 'fase', 'riesgo']);
     const descartado = r.body.evaluaciones.find((e: { elegible: boolean }) => !e.elegible);
     expect(descartado.motivoDescarte).toBeTruthy();
-    expect(await EvaluacionDestino.countDocuments({ solicitud_id: solicitudId })).toBe(69);
+    expect(await EvaluacionDestino.countDocuments({ solicitud_id: solicitudId })).toBe(total);
     // El fundamento se guarda cifrado
     const crudo = await mongoose.connection.collection('solicitudes_traslado').findOne({ _id: new mongoose.Types.ObjectId(solicitudId) });
     expect(crudo!.fundamento_cifrado).toMatch(/^v1:/);

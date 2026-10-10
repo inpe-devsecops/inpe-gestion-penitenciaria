@@ -9,5 +9,5 @@ coverage/
 .vscode/
 .idea/
 
-# Datos simulados: se regeneran con tools/generador (no subir 100+ MB de datos personales ficticios)
-datos/*.json
+# Registros de la API cuando corre como tarea programada (scripts/)
+backend/logs/

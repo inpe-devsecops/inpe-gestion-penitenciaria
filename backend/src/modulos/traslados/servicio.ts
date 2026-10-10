@@ -65,7 +65,8 @@ async function internoParaSolicitar(req: Request, internoId: string) {
 export async function vistaPrevia(req: Request, internoId: string) {
   const { interno } = await internoParaSolicitar(req, internoId);
   const { resultados, pesos } = await ejecutarMotor(interno);
-  return { internoId, pesos, evaluaciones: resultados, generadaEn: new Date() };
+  const evaluaciones = resultados.map(({ nombre, ...r }) => ({ ...r, destino: nombre }));
+  return { internoId, pesos, evaluaciones, generadaEn: new Date() };
 }
 
 // ----- Registro (RF-11 a RF-19)

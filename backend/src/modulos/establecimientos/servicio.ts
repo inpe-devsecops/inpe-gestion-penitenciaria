@@ -1,6 +1,9 @@
 import type { Request } from 'express';
 import type { ClientSession } from 'mongoose';
-import type { TechoSeguridad } from '../../dominio/constantes';
+import {
+  NIVEL_CLASIFICACION, NIVEL_TECHO, type Clasificacion, type FaseTratamiento, type GeneroPoblacion, type TechoSeguridad,
+} from '../../dominio/constantes';
+import { codigoDePenal } from '../../db/datos-inpe';
 import { auditar } from '../../lib/auditoria';
 import { ErrorApi, noEncontrado, sinPermiso } from '../../lib/errores';
 import { regexLiteral } from '../../lib/validacion';
@@ -108,6 +111,62 @@ export async function registrarEnSerie(id: string, poblacion: number, capacidad:
     { $set: { poblacion, capacidad, interpolado: false } },
     { upsert: true, session },
   );
+}
+
+// ----- Catálogo (RF-02, RF-03). Un establecimiento nuevo es solo un documento más: no cambia la estructura (RNF-19)
+
+export interface AtributosEstablecimiento {
+  nombre: string;
+  oficinaId: string;
+  departamento: string;
+  latitud: number;
+  longitud: number;
+  techoSeguridad: TechoSeguridad;
+  regimenesAdmitidos: Clasificacion[];
+  generoPoblacion: GeneroPoblacion;
+  fasesTratamiento: FaseTratamiento[];
+  proporcionAltoRiesgo: number;
+  activo: boolean;
+}
+
+function validarCoherencia(a: Pick<AtributosEstablecimiento, 'techoSeguridad' | 'regimenesAdmitidos'>) {
+  const excede = a.regimenesAdmitidos.filter((c) => NIVEL_CLASIFICACION[c] > NIVEL_TECHO[a.techoSeguridad]);
+  if (excede.length) throw new ErrorApi(422, 'REGLA_DE_NEGOCIO', `El techo ${a.techoSeguridad} no permite admitir: ${excede.join(', ')}`);
+}
+
+const aDocumento = (a: Partial<AtributosEstablecimiento>) => {
+  const d: Record<string, unknown> = {};
+  if (a.nombre !== undefined) d.nombre = a.nombre;
+  if (a.oficinaId !== undefined) d.oficina_id = a.oficinaId;
+  if (a.departamento !== undefined) d.departamento = a.departamento;
+  if (a.latitud !== undefined && a.longitud !== undefined) d.ubicacion = { latitud: a.latitud, longitud: a.longitud };
+  if (a.techoSeguridad !== undefined) d.techo_seguridad = a.techoSeguridad;
+  if (a.regimenesAdmitidos !== undefined) d.regimenes_admitidos = a.regimenesAdmitidos;
+  if (a.generoPoblacion !== undefined) d.genero_poblacion = a.generoPoblacion;
+  if (a.fasesTratamiento !== undefined) d.fases_tratamiento = a.fasesTratamiento;
+  if (a.proporcionAltoRiesgo !== undefined) d.proporcion_alto_riesgo = a.proporcionAltoRiesgo;
+  if (a.activo !== undefined) d.activo = a.activo;
+  return d;
+};
+
+export async function crearEstablecimiento(req: Request, a: AtributosEstablecimiento & { capacidad: number; poblacion: number }) {
+  validarCoherencia(a);
+  if (!(await OficinaRegional.exists({ _id: a.oficinaId }))) throw new ErrorApi(422, 'REGLA_DE_NEGOCIO', 'La oficina regional no existe');
+  const usados = new Set((await Establecimiento.find({}, { _id: 1 }).lean()).map((e) => e._id));
+  const id = codigoDePenal(a.nombre, usados);
+  await Establecimiento.create({ _id: id, ...aDocumento(a), capacidad_oficial: a.capacidad, poblacion_actual: a.poblacion, actualizado_en: new Date() });
+  await registrarEnSerie(id, a.poblacion, a.capacidad);
+  await auditar(req, { accion: 'REGISTRAR_ESTABLECIMIENTO', entidad: 'establecimientos', entidad_id: id, resultado: 'EXITO', valor_nuevo: a });
+  return id;
+}
+
+export async function actualizarAtributos(req: Request, id: string, cambios: Partial<AtributosEstablecimiento>) {
+  const e = await obtenerVisible(req, id);
+  validarCoherencia({ techoSeguridad: cambios.techoSeguridad ?? e.techo_seguridad, regimenesAdmitidos: cambios.regimenesAdmitidos ?? e.regimenes_admitidos });
+  const nuevo = aDocumento(cambios);
+  const anterior = Object.fromEntries(Object.keys(nuevo).map((k) => [k, (e as unknown as Record<string, unknown>)[k]]));
+  await Establecimiento.updateOne({ _id: id }, { $set: { ...nuevo, actualizado_en: new Date() } }, { runValidators: true });
+  await auditar(req, { accion: 'ACTUALIZAR_ESTABLECIMIENTO', entidad: 'establecimientos', entidad_id: id, resultado: 'EXITO', valor_anterior: anterior, valor_nuevo: nuevo });
 }
 
 // El director actualiza la ocupación de su establecimiento (carga del reporte mensual); el central, cualquiera.

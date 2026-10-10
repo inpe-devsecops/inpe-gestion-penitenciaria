@@ -11,6 +11,7 @@ const esquema = z.object({
   DATA_KEY: clave32('DATA_KEY'),
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
   ALERT_JOB_INTERVAL_MIN: z.coerce.number().int().min(0).default(15),
+  MIGRAR_AL_INICIAR: z.enum(['true', 'false']).default('true'),
 });
 
 export interface Config {
@@ -22,6 +23,8 @@ export interface Config {
   corsOrigin: string[];
   /** Cada cuántos minutos se reevalúan los umbrales de alerta (0 = desactivado). */
   intervaloAlertasMin: number;
+  /** false en producción: la API usa un usuario sin permisos sobre la estructura (ver SECURITY.md). */
+  migrarAlIniciar: boolean;
 }
 
 // Falla al iniciar si falta un secreto: valores por defecto seguros (fail-safe defaults).
@@ -40,5 +43,6 @@ export function cargarConfig(env: NodeJS.ProcessEnv = process.env): Config {
     dataKey: Buffer.from(e.DATA_KEY, 'base64'),
     corsOrigin: e.CORS_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean),
     intervaloAlertasMin: e.ALERT_JOB_INTERVAL_MIN,
+    migrarAlIniciar: e.MIGRAR_AL_INICIAR === 'true',
   };
 }
