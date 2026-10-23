@@ -26,6 +26,12 @@ describe('Cifrado selectivo de campos (RNF01 / REQ-SEC-03)', () => {
   it('no descifra con otra clave', () => {
     expect(() => descifrar(cifrar('dato', clave), randomBytes(32))).toThrow();
   });
+
+  it('rechaza una etiqueta de autenticación truncada (Semgrep gcm-no-tag-length)', () => {
+    const partes = cifrar('12345678', clave).split(':');
+    partes[2] = Buffer.from(partes[2], 'base64').subarray(0, 4).toString('base64');
+    expect(() => descifrar(partes.join(':'), clave)).toThrow();
+  });
 });
 
 describe('Índice ciego (RNF02)', () => {
