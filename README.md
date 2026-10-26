@@ -55,7 +55,7 @@ Los usuarios simulados están en `datos/usuarios.json` (por ejemplo, el primer d
 | Requisito | Prueba |
 |---|---|
 | REQ-SEC-01 Bloqueo tras 5 intentos | `tests/seguridad.test.ts` |
-| REQ-SEC-02 Acceso solo a internos del propio penal | `tests/seguridad.test.ts` |
+| REQ-SEC-02 Acceso solo a internos del propio ámbito (penal u oficina regional) | `tests/seguridad.test.ts` |
 | REQ-SEC-03 Campos sensibles cifrados | `tests/cripto.test.ts` |
 | REQ-SEC-04 Token expirado | `tests/seguridad.test.ts` |
 | REQ-SEC-06 Inyección NoSQL | `tests/seguridad.test.ts` |

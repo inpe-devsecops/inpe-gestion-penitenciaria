@@ -567,7 +567,7 @@ public static class Generador
         foreach (char c in n) if (c >= 'a' && c <= 'z') sb.Append(c);
         return sb.ToString();
     }
-    class Usuario { public string Id, Username, Nombres, ApPat, ApMat, Rol, PenalId; public DateTime Creado, UltimoAcceso; }
+    class Usuario { public string Id, Username, Nombres, ApPat, ApMat, Rol, PenalId, OficinaId; public DateTime Creado, UltimoAcceso; }
 
     static string Extras(string outDir, List<Penal> penales, List<Interno> I)
     {
@@ -576,10 +576,10 @@ public static class Generador
 
         // ---------------- usuarios
         var users = new List<Usuario>(); var usados = new HashSet<string>();
-        Func<string, string, Usuario> NU = (rol, penal) =>
+        Func<string, string, string, Usuario> NU = (rol, penal, oficina) =>
         {
             char sx = U() < 0.5 ? 'M' : 'F';
-            var u = new Usuario { Rol = rol, PenalId = penal, Nombres = NombreSimple(sx), ApPat = Ap[R.Next(Ap.Length)], ApMat = Ap[R.Next(Ap.Length)] };
+            var u = new Usuario { Rol = rol, PenalId = penal, OficinaId = oficina, Nombres = NombreSimple(sx), ApPat = Ap[R.Next(Ap.Length)], ApMat = Ap[R.Next(Ap.Length)] };
             string baseU = Slug(u.Nombres.Substring(0, 1)) + Slug(u.ApPat); string un = baseU; int k = 2;
             while (!usados.Add(un)) un = baseU + (k++);
             u.Username = un; u.Id = "USR" + (users.Count + 1).ToString("0000");
@@ -587,21 +587,21 @@ public static class Generador
             u.UltimoAcceso = REF.AddDays(-R.Next(0, 10)).AddHours(R.Next(7, 19)).AddMinutes(R.Next(60));
             users.Add(u); return u;
         };
-        for (int k = 0; k < 3; k++) NU("ADMIN_CENTRAL", null);
-        for (int k = 0; k < 2; k++) NU("AUDITOR", null);
-        foreach (var p in penales)
-        {
-            NU("DIRECTOR_PENAL", p.Id);
-            int nOps = p.Pop < 200 ? 1 : p.Pop < 1000 ? 2 : p.Pop < 3000 ? 3 : p.Pop < 6000 ? 4 : 6;
-            for (int k = 0; k < nOps; k++) NU("OPERADOR_REGISTRO", p.Id);
-        }
+        // Roles del informe (Tabla 8): el director registra las fichas de su penal y el responsable regional
+        // solicita los traslados de los penales de su oficina.
+        for (int k = 0; k < 3; k++) NU("ADMIN_CENTRAL", null, null);
+        for (int k = 0; k < 2; k++) NU("AUDITOR", null, null);
+        foreach (var of in penales.Select(p => p.Oficina).Distinct()) NU("RESPONSABLE_REGIONAL", null, of);
+        foreach (var p in penales) NU("DIRECTOR_PENAL", p.Id, null);
         var directorDe = users.Where(u => u.Rol == "DIRECTOR_PENAL").ToDictionary(u => u.PenalId);
+        var responsableDe = users.Where(u => u.Rol == "RESPONSABLE_REGIONAL").ToDictionary(u => u.OficinaId);
         var admins = users.Where(u => u.Rol == "ADMIN_CENTRAL").ToList();
         var auditores = users.Where(u => u.Rol == "AUDITOR").ToList();
         using (var w = new StreamWriter(Path.Combine(outDir, "usuarios.json"), false, utf8))
             foreach (var u in users)
                 w.WriteLine("{\"_id\":" + Esc(u.Id) + ",\"username\":" + Esc(u.Username) + ",\"nombres\":" + Esc(u.Nombres) + ",\"apellido_paterno\":" + Esc(u.ApPat) + ",\"apellido_materno\":" + Esc(u.ApMat) +
                     ",\"correo\":" + Esc(u.Username + "@inpe-devsecops.test") + ",\"rol\":" + Esc(u.Rol) + ",\"penal_id\":" + (u.PenalId == null ? "null" : Esc(u.PenalId)) +
+                    ",\"oficina_id\":" + (u.OficinaId == null ? "null" : Esc(u.OficinaId)) +
                     ",\"estado\":\"PENDIENTE_ACTIVACION\",\"password_hash\":null,\"mfa\":{\"habilitado\":false,\"secreto_cifrado\":null},\"intentos_fallidos\":0,\"bloqueado_hasta\":null" +
                     ",\"fecha_creacion\":" + DT(u.Creado) + ",\"ultimo_acceso\":" + DT(u.UltimoAcceso) + ",\"dato_ficticio\":true}");
 
@@ -613,7 +613,7 @@ public static class Generador
         Action<Interno, Penal, Penal, string, DateTime> T = (x, ori, des, estado, fsol) =>
         {
             nt++; if (!cnt.ContainsKey(estado)) cnt[estado] = 0; cnt[estado]++;
-            var dir = directorDe[ori.Id]; var adm = admins[R.Next(admins.Count)];
+            var sol = responsableDe[ori.Oficina]; var dir = directorDe[ori.Id]; var adm = admins[R.Next(admins.Count)];
             string motivo = motivos[R.Next(motivos.Length)];
             var sb = new StringBuilder();
             sb.Append("{\"_id\":").Append(Esc("TRA-" + nt.ToString("000000"))).Append(",\"codigo_interno\":").Append(Esc("INT-" + x.N.ToString("0000000")));
@@ -621,14 +621,14 @@ public static class Generador
             sb.Append(",\"motivo\":").Append(Esc(motivo)).Append(",\"estado\":").Append(Esc(estado));
             sb.Append(",\"recomendacion\":{\"generada_por_sistema\":").Append(motivo == "DESCONGESTIÓN" ? "true" : "false")
               .Append(",\"sobrepoblacion_origen_pct\":").Append(Math.Round(Hac(ori))).Append(",\"sobrepoblacion_destino_pct\":").Append(Math.Round(Hac(des))).Append("}");
-            sb.Append(",\"solicitado_por\":").Append(Esc(dir.Id)).Append(",\"fecha_solicitud\":").Append(DT(fsol.AddHours(R.Next(8, 18))));
-            if (estado == "PENDIENTE") sb.Append(",\"resuelto_por\":null,\"fecha_resolucion\":null,\"fecha_ejecucion\":null,\"observacion\":null");
+            sb.Append(",\"solicitado_por\":").Append(Esc(sol.Id)).Append(",\"fecha_solicitud\":").Append(DT(fsol.AddHours(R.Next(8, 18))));
+            if (estado == "PENDIENTE") sb.Append(",\"resuelto_por\":null,\"fecha_resolucion\":null,\"ejecutado_por\":null,\"fecha_ejecucion\":null,\"observacion\":null");
             else
             {
                 var fres = fsol.AddDays(R.Next(1, 15)); if (fres > REF) fres = REF;
                 sb.Append(",\"resuelto_por\":").Append(Esc(adm.Id)).Append(",\"fecha_resolucion\":").Append(DT(fres.AddHours(R.Next(8, 18))));
-                if (estado == "EJECUTADO") { var fe = fres.AddDays(R.Next(1, 20)); if (fe > REF) fe = REF; sb.Append(",\"fecha_ejecucion\":").Append(DT(fe.AddHours(R.Next(6, 14)))); }
-                else sb.Append(",\"fecha_ejecucion\":null");
+                if (estado == "EJECUTADO") { var fe = fres.AddDays(R.Next(1, 20)); if (fe > REF) fe = REF; sb.Append(",\"ejecutado_por\":").Append(Esc(dir.Id)).Append(",\"fecha_ejecucion\":").Append(DT(fe.AddHours(R.Next(6, 14)))); }
+                else sb.Append(",\"ejecutado_por\":null,\"fecha_ejecucion\":null");
                 sb.Append(",\"observacion\":").Append(estado == "RECHAZADO" ? Esc(R.Next(2) == 0 ? "El penal de destino no cuenta con pabellón disponible para el perfil del interno." : "Proceso judicial en curso requiere permanencia en el distrito judicial de origen.") : "null");
             }
             sb.Append(",\"dato_ficticio\":true}");
@@ -690,8 +690,9 @@ public static class Generador
 
         // ---------------- auditoría (enero 2026), incluye un patrón sospechoso para probar alertas de seguridad
         var aud = new StringBuilder(); int ne = 0;
-        var ops = users.Where(u => u.Rol == "OPERADOR_REGISTRO").ToList();
+        var directores = users.Where(u => u.Rol == "DIRECTOR_PENAL").ToList();
         var porPenal = I.GroupBy(x => x.P.Id).ToDictionary(g => g.Key, g => g.ToList());
+        var penalesDe = penales.GroupBy(p => p.Oficina).ToDictionary(g => g.Key, g => g.ToList());
         Action<DateTime, Usuario, string, string, string, string, string> EV = (f, u, accion, recurso, resultado, detalle, ip) =>
         {
             ne++;
@@ -712,27 +713,30 @@ public static class Generador
                 var t0 = fecha.AddHours(R.Next(7, 10)).AddMinutes(R.Next(60)).AddSeconds(R.Next(60));
                 if (U() < 0.05) EV(t0.AddSeconds(-40), u, "LOGIN", null, "FALLIDO", "Contraseña incorrecta", ip);
                 EV(t0, u, "LOGIN", null, "EXITO", "MFA verificado", ip);
-                int acciones = u.Rol == "OPERADOR_REGISTRO" ? R.Next(4, 14) : u.Rol == "DIRECTOR_PENAL" ? R.Next(2, 7) : R.Next(1, 5);
+                int acciones = u.Rol == "DIRECTOR_PENAL" ? R.Next(4, 12) : u.Rol == "RESPONSABLE_REGIONAL" ? R.Next(3, 8) : R.Next(1, 5);
                 var t = t0;
                 for (int a = 0; a < acciones; a++)
                 {
                     t = t.AddMinutes(R.Next(3, 45)).AddSeconds(R.Next(60));
-                    if (u.Rol == "OPERADOR_REGISTRO")
+                    if (u.Rol == "DIRECTOR_PENAL")
                     {
                         var x = porPenal[u.PenalId][R.Next(porPenal[u.PenalId].Count)]; string cod = "INT-" + x.N.ToString("0000000");
                         double r = U();
-                        if (r < 0.60) EV(t, u, "CONSULTA_FICHA_INTERNO", cod, "EXITO", null, ip);
-                        else if (r < 0.80) EV(t, u, "ACTUALIZA_SITUACION_JURIDICA", cod, "EXITO", "Actualización de datos procesales", ip);
-                        else if (r < 0.92) EV(t, u, "REGISTRA_INGRESO", cod, "EXITO", null, ip);
-                        else EV(t, u, "REGISTRA_EGRESO", cod, "EXITO", null, ip);
+                        if (r < 0.40) EV(t, u, "CONSULTA_FICHA_INTERNO", cod, "EXITO", null, ip);
+                        else if (r < 0.55) EV(t, u, "ACTUALIZA_FICHA_INTERNO", cod, "EXITO", "Campos: situacion_juridica", ip);
+                        else if (r < 0.65) EV(t, u, "REGISTRA_FICHA_INTERNO", cod, "EXITO", null, ip);
+                        else if (r < 0.80) EV(t, u, "CONSULTA_TABLERO_OCUPACION", u.PenalId, "EXITO", null, ip);
+                        else if (r < 0.92) EV(t, u, "ATIENDE_ALERTA", u.PenalId, "EXITO", null, ip);
+                        else EV(t, u, "REGISTRA_EJECUCION_TRASLADO", u.PenalId, "EXITO", null, ip);
                     }
-                    else if (u.Rol == "DIRECTOR_PENAL")
+                    else if (u.Rol == "RESPONSABLE_REGIONAL")
                     {
+                        var pr = penalesDe[u.OficinaId][R.Next(penalesDe[u.OficinaId].Count)];
                         double r = U();
-                        if (r < 0.5) EV(t, u, "CONSULTA_TABLERO_OCUPACION", u.PenalId, "EXITO", null, ip);
-                        else if (r < 0.75) EV(t, u, "ATIENDE_ALERTA", u.PenalId, "EXITO", null, ip);
-                        else if (r < 0.9) EV(t, u, "EXPORTA_REPORTE", u.PenalId, "EXITO", "Reporte agregado de ocupación (PDF)", ip);
-                        else EV(t, u, "SOLICITA_TRASLADO", u.PenalId, "EXITO", null, ip);
+                        if (r < 0.45) EV(t, u, "CONSULTA_INDICADORES_REGION", u.OficinaId, "EXITO", null, ip);
+                        else if (r < 0.75) { var x = porPenal[pr.Id][R.Next(porPenal[pr.Id].Count)]; EV(t, u, "CONSULTA_FICHA_INTERNO", "INT-" + x.N.ToString("0000000"), "EXITO", null, ip); }
+                        else if (r < 0.90) EV(t, u, "SOLICITA_TRASLADO", pr.Id, "EXITO", null, ip);
+                        else EV(t, u, "CONSULTA_PROYECCION", pr.Id, "EXITO", null, ip);
                     }
                     else if (u.Rol == "ADMIN_CENTRAL")
                     {
@@ -746,11 +750,11 @@ public static class Generador
                 EV(t.AddMinutes(R.Next(5, 120)), u, "LOGOUT", null, "EXITO", null, ip);
             }
         }
-        // patrón sospechoso: intentos de fuerza bruta desde IP externa y un operador con consultas masivas de madrugada fuera de su penal
-        var victima = ops[R.Next(ops.Count)];
+        // patrón sospechoso: intentos de fuerza bruta desde IP externa y un director con consultas masivas de madrugada fuera de su penal
+        var victima = directores[R.Next(directores.Count)];
         var tb = new DateTime(2026, 1, 18, 3, 12, 0);
-        for (int k = 0; k < 7; k++) EV(tb.AddSeconds(k * 9), victima, "LOGIN", null, k < 5 ? "FALLIDO" : "BLOQUEADO", k < 5 ? "Contraseña incorrecta" : "Cuenta bloqueada 15 minutos (RNF06)", "181.65." + R.Next(1, 250) + "." + R.Next(2, 250));
-        var sosp = ops.First(u => u != victima); var ts = new DateTime(2026, 1, 24, 2, 5, 0); string ipS = IP(sosp);
+        for (int k = 0; k < 7; k++) EV(tb.AddSeconds(k * 9), victima, "LOGIN", null, k < 5 ? "FALLIDO" : "BLOQUEADO", k < 5 ? "Contraseña incorrecta" : "Cuenta bloqueada 15 minutos (RNF-01)", "181.65." + R.Next(1, 250) + "." + R.Next(2, 250));
+        var sosp = directores.First(u => u != victima && porPenal[u.PenalId].Count > 40); var ts = new DateTime(2026, 1, 24, 2, 5, 0); string ipS = IP(sosp);
         EV(ts, sosp, "LOGIN", null, "EXITO", "MFA verificado", ipS);
         var otro = penales.First(p => p.Id != sosp.PenalId && p.Pop > 3000);
         for (int k = 0; k < 40; k++)
@@ -761,11 +765,11 @@ public static class Generador
         for (int k = 0; k < 6; k++)
         {
             var x = porPenal[otro.Id][R.Next(porPenal[otro.Id].Count)];
-            EV(ts.AddSeconds(300 + k * 5), sosp, "CONSULTA_FICHA_INTERNO", "INT-" + x.N.ToString("0000000"), "DENEGADO", "403: el interno no pertenece al penal del usuario (RNF08)", ipS);
+            EV(ts.AddSeconds(300 + k * 5), sosp, "CONSULTA_FICHA_INTERNO", "INT-" + x.N.ToString("0000000"), "DENEGADO", "404: el interno está fuera del ámbito del usuario (RNF-02)", ipS);
         }
         File.WriteAllText(Path.Combine(outDir, "auditoria.json"), aud.ToString(), utf8);
 
-        log.AppendLine("usuarios=" + users.Count + " (admin=" + admins.Count + ", auditor=" + auditores.Count + ", director=" + directorDe.Count + ", operador=" + ops.Count + ")");
+        log.AppendLine("usuarios=" + users.Count + " (admin=" + admins.Count + ", auditor=" + auditores.Count + ", director=" + directorDe.Count + ", responsable_regional=" + responsableDe.Count + ")");
         log.AppendLine("traslados=" + nt + " " + string.Join(", ", cnt.Select(kv => kv.Key + "=" + kv.Value)));
         log.AppendLine("alertas=" + na + " " + string.Join(", ", ca.Select(kv => kv.Key + "=" + kv.Value)));
         log.AppendLine("auditoria_eventos=" + ne + " (incluye fuerza bruta contra " + victima.Username + " y consultas masivas de " + sosp.Username + ")");
