@@ -58,14 +58,22 @@ describe('Autorización a nivel de objeto (RNF08 / REQ-SEC-02)', () => {
     expect(res.body.codigo_interno).toBe('INT-0000001');
   });
 
-  it('un operador recibe 403 al pedir un interno de otro penal y queda auditado', async () => {
+  it('un operador recibe 404 al pedir un interno de otro penal y queda auditado', async () => {
     const { app, auditoria } = crear();
-    await request(app).get('/api/internos/INT-0000002').set('Authorization', token(operadorEP01)).expect(403);
+    await request(app).get('/api/internos/INT-0000002').set('Authorization', token(operadorEP01)).expect(404);
     expect(auditoria).toContainEqual(expect.objectContaining({ resultado: 'DENEGADO', recurso: 'INT-0000002', usuario_id: 'USR1' }));
   });
 
+  it('un interno ajeno y uno inexistente responden exactamente igual (anti-enumeración)', async () => {
+    const app = crear().app;
+    const ajeno = await request(app).get('/api/internos/INT-0000002').set('Authorization', token(operadorEP01));
+    const inexistente = await request(app).get('/api/internos/INT-9999999').set('Authorization', token(operadorEP01));
+    expect(ajeno.status).toBe(inexistente.status);
+    expect(ajeno.body).toEqual(inexistente.body);
+  });
+
   it('el auditor no accede a datos personales (RNF09)', async () => {
-    await request(crear().app).get('/api/internos/INT-0000001').set('Authorization', token({ id: 'A1', rol: 'AUDITOR', penalId: null })).expect(403);
+    await request(crear().app).get('/api/internos/INT-0000001').set('Authorization', token({ id: 'A1', rol: 'AUDITOR', penalId: null })).expect(404);
   });
 
   it('el administrador central accede a cualquier penal', async () => {
