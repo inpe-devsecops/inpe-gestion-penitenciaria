@@ -19,9 +19,10 @@ export function rutasInternos(internos: RepositorioInternos, auditar: Auditar) {
       const ficha = await internos.buscarPorCodigo(codigo.data);
       if (!ficha) return res.status(404).json({ error: 'No encontrado' });
 
+      // Un interno ajeno responde igual que uno inexistente (404): no confirma qué códigos existen (anti-enumeración).
       if (!puedeVerDatosPersonales(u, ficha.penal_id)) {
         await auditar({ ...base, resultado: 'DENEGADO', detalle: 'El interno no pertenece al penal del usuario' });
-        return res.status(403).json({ error: 'Acceso denegado' });
+        return res.status(404).json({ error: 'No encontrado' });
       }
       await auditar({ ...base, resultado: 'EXITO' });
       return res.json(ficha);
