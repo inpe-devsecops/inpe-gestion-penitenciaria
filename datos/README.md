@@ -12,10 +12,10 @@ Población penitenciaria **ficticia** para el desarrollo y las pruebas del MVP. 
 | `pabellones.json` | `pabellones` | 246 | Pabellones por penal (**simulados**: el INPE no publica datos por pabellón) |
 | `delitos.json` | `delitos` | 42 | Catálogo: 20 delitos del INPE + 22 subdelitos de "Otros delitos" |
 | `internos.json` | `internos` | 103,717 | Un documento por interno (~89 MB) |
-| `usuarios.json` | `usuarios` | 243 | 3 administradores centrales, 2 auditores, 69 directores (uno por penal) y 169 operadores de registro |
+| `usuarios.json` | `usuarios` | 82 | 3 administradores centrales, 2 auditores, 69 directores (uno por penal, registran las fichas) y 8 responsables regionales (uno por oficina, solicitan traslados) |
 | `traslados.json` | `traslados` | 3,210 | 2,400 ejecutados en los últimos 12 meses, 420 pendientes, 160 aprobados por ejecutar y 230 rechazados |
 | `alertas.json` | `alertas` | 3,503 | Alertas del motor al 31/01/2026: hacinamiento por penal (51), aforo de pabellón (213), liberación próxima (192) y prisión preventiva por vencer (3,047) |
-| `auditoria.json` | `auditoria` | 44,659 | Bitácora de enero 2026 (inicios de sesión, consultas, actualizaciones, traslados, reportes) |
+| `auditoria.json` | `auditoria` | 14,846 | Bitácora de enero 2026 (inicios de sesión, consultas, actualizaciones, traslados, reportes) |
 | `validacion.md` | — | — | Comparación simulado vs. INPE (0 diferencias) |
 | `generador/` | — | — | Código para regenerar los datos |
 
@@ -80,8 +80,8 @@ db.auditoria.createIndex({ usuario_id: 1, fecha: -1 })
 
 ### Casos de prueba incluidos en `auditoria.json`
 
-- **Fuerza bruta:** el 18/01/2026 a las 03:12 hay 5 inicios de sesión fallidos contra un operador desde IP externas, seguidos del bloqueo de la cuenta (RNF06).
-- **Uso indebido interno:** el 24/01/2026 a las 02:05, otro operador hace 40 consultas de fichas en 4 minutos y 6 intentos de ver internos de otro penal, que son denegados con 403 (RNF08).
+- **Fuerza bruta:** el 18/01/2026 a las 03:12 hay 5 inicios de sesión fallidos contra un director desde IP externas, seguidos del bloqueo de la cuenta (RNF-01).
+- **Uso indebido interno:** el 24/01/2026 a las 02:05, otro director hace 40 consultas de fichas en 4 minutos y 6 intentos de ver internos de otro penal, que son denegados con 404 (RNF-02).
 
 Sirven para demostrar las alertas de seguridad de la sección 4.3.
 

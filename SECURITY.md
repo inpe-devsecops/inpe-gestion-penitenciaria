@@ -13,7 +13,8 @@ No abras un *issue* público. Escribe a los mantenedores del equipo por el canal
 | Cifrado AES-256-GCM de nombre, documento, expediente y delito | `backend/src/seguridad/cripto.ts` |
 | Índice ciego HMAC-SHA256 para buscar por documento | `backend/src/seguridad/cripto.ts` |
 | JWT de 15 minutos validado en cada petición | `backend/src/seguridad/auth.ts` |
-| Control de acceso por rol y por penal (anti-BOLA) | `backend/src/seguridad/auth.ts` |
+| Control de acceso por rol, penal y oficina regional (anti-BOLA); un interno ajeno responde 404 | `backend/src/seguridad/auth.ts` |
+| Registro y corrección de fichas solo por el director de su penal, con lista blanca de campos | `backend/src/rutas/internos.ts` |
 | Bloqueo de cuenta tras 5 intentos fallidos | `backend/src/rutas/auth.ts` |
 | Rechazo de operadores NoSQL en la entrada | `backend/src/seguridad/sanitizar.ts` |
 | Cabeceras seguras, CORS restringido, rate limiting | `backend/src/app.ts` |

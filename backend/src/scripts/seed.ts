@@ -7,7 +7,8 @@ import { createInterface } from 'node:readline';
 import argon2 from 'argon2';
 import mongoose from 'mongoose';
 import { cargarConfig } from '../config';
-import { cifrar, indiceCiego } from '../seguridad/cripto';
+import { cifrar } from '../seguridad/cripto';
+import { cifrarDocumento, cifrarIdentidad } from '../seguridad/fichas';
 
 type Doc = Record<string, unknown>;
 const EJSON = mongoose.mongo.BSON.EJSON;
@@ -60,14 +61,12 @@ async function main() {
 
   await cargar('internos', dir, (d) => {
     const { nombres, apellido_paterno, apellido_materno, numero_documento, numero_expediente, delito, edad: _edad, ...resto } = d;
+    const s = (v: unknown) => String(v ?? '');
     return {
       ...resto,
-      nombres_cifrado: texto(nombres),
-      apellido_paterno_cifrado: texto(apellido_paterno),
-      apellido_materno_cifrado: apellido_materno ? texto(apellido_materno) : '',
-      numero_documento_cifrado: texto(numero_documento),
-      numero_documento_hmac: indiceCiego(`${String(resto.tipo_documento)}:${String(numero_documento)}`, config.hmacKey),
-      numero_expediente_cifrado: texto(numero_expediente),
+      ...cifrarIdentidad({ nombres: s(nombres), apellido_paterno: s(apellido_paterno), apellido_materno: s(apellido_materno), numero_expediente: s(numero_expediente) }, k),
+      ...cifrarDocumento(s(resto.tipo_documento), s(numero_documento), k, config.hmacKey),
+      // Los datos de carga traen el delito como objeto completo (id, nombre, artículo); se cifra tal cual.
       delito_cifrado: texto(JSON.stringify(delito)),
     };
   });

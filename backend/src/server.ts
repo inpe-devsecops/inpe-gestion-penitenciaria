@@ -12,7 +12,7 @@ async function main() {
 
   const app = crearApp({
     config,
-    internos: repositorioInternos(config.dataKey),
+    internos: repositorioInternos(config.dataKey, config.hmacKey),
     usuarios: repositorioUsuarios(),
     auditar: auditarEnMongo,
     verificarPassword: (hash, password) => argon2.verify(hash, password),

@@ -47,7 +47,7 @@ export function rutasAuth(
       // TODO (sprint 2): segundo factor TOTP obligatorio antes de emitir el token (RNF05).
       await usuarios.registrarExito(u.id);
       await auditar({ ...base, ...quien, resultado: 'EXITO' });
-      return res.json({ token: emitirToken({ id: u.id, rol: u.rol, penalId: u.penalId }, jwtSecret), expira_en: 900 });
+      return res.json({ token: emitirToken({ id: u.id, rol: u.rol, penalId: u.penalId, oficinaId: u.oficinaId }, jwtSecret), expira_en: 900 });
     } catch (e) {
       return next(e);
     }
