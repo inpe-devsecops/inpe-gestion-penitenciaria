@@ -8,7 +8,7 @@ import { requiereRol } from '../../seguridad/auth';
 import { cambiarEstadoAlerta, evaluarAlertas, historialAlerta, listarAlertas } from './servicio';
 
 const filtros = z.object({
-  soloVigentes: booleanoQuery.default('true'),
+  soloVigentes: booleanoQuery.default(true),
   severidad: z.enum(SEVERIDADES).optional(),
   condicion: z.enum(CONDICIONES_ALERTA).optional(),
   establecimientoId: idEstablecimiento.optional(),

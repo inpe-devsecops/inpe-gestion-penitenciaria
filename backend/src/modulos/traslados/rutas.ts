@@ -11,7 +11,7 @@ const fundamento = z.string().trim().min(20, 'El fundamento debe tener al menos 
 
 const nuevaSolicitud = z.object({
   internoId: idInterno,
-  causal: z.enum(CAUSALES_TRASLADO, { errorMap: () => ({ message: 'La causal debe pertenecer al catálogo del art. 159 del Reglamento' }) }),
+  causal: z.enum(CAUSALES_TRASLADO, { error: 'La causal debe pertenecer al catálogo del art. 159 del Reglamento' }),
   fundamento,
 }).strict();
 

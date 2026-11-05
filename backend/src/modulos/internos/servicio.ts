@@ -62,7 +62,7 @@ async function internoVisible(req: Request, id: string) {
   const est = await Establecimiento.findById(i.establecimiento_id, { oficina_id: 1 }).lean();
   if (!est || !puedeVerEstablecimiento(req.usuario!, est)) {
     await auditar(req, { accion: 'CONSULTA_INTERNO', entidad: 'internos', entidad_id: id, resultado: 'DENEGADO', detalle: 'Fuera del ámbito' });
-    throw sinPermiso('El interno no pertenece a su ámbito');
+    throw noEncontrado('Interno');
   }
   return { interno: i, establecimiento: est };
 }

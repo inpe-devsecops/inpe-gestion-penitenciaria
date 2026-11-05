@@ -77,7 +77,7 @@ describe('Autorización por rol y ámbito (RNF-02)', () => {
   it('un director no puede ver la ficha de un interno de otro establecimiento', async () => {
     const otro = await Interno.findOne({ establecimiento_id: 'EP-LURIGANCHO' }).lean();
     const token = await iniciarSesion(app, 'director.ep-tacna');
-    await request(app).get(`/api/internos/${otro!._id}`).set('Authorization', token).expect(403);
+    await request(app).get(`/api/internos/${otro!._id}`).set('Authorization', token).expect(404);
   });
 
   it('el auditor consulta pero no modifica ni inicia traslados', async () => {
