@@ -1,9 +1,15 @@
 node_modules/
 dist/
+build/
 coverage/
+__pycache__/
 .env
 .env.*
 !.env.example
+*.pem
+*.key
+*.db
+*.sqlite3
 *.log
 .DS_Store
 .vscode/
