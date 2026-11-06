@@ -1,10 +1,19 @@
-.vscode/
+node_modules/
+dist/
+build/
+coverage/
+__pycache__/
 .env
+.env.*
+!.env.example
 *.pem
 *.key
 *.db
 *.sqlite3
-node_modules/
-__pycache__/
-dist/
-build/
+*.log
+.DS_Store
+.vscode/
+.idea/
+
+# Registros de la API cuando corre como tarea programada (scripts/)
+backend/logs/
