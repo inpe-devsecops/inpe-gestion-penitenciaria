@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import request from 'supertest';
-import { Auditoria, Interno, Usuario } from '../../src/modelos';
+import { Auditoria, Establecimiento, Interno, Usuario } from '../../src/modelos';
 import { cerrarBase, config, iniciarSesion, nuevaApp, PASSWORD, prepararBase } from './entorno';
 
 const app = nuevaApp();
@@ -146,5 +146,57 @@ describe('Auditoría de solo inserción (RNF-11)', () => {
     const token = await iniciarSesion(app, 'admin.central');
     await request(app).delete('/api/auditoria').set('Authorization', token).expect(404);
     await request(app).patch('/api/auditoria').set('Authorization', token).send({}).expect(404);
+  });
+});
+
+
+describe('Fichas de internos: ámbito y 404 (aportado por la rama de roles)', () => {
+  const fichaNueva = {
+    sexo: 'M', clasificacion: 'MINIMA', faseTratamiento: 'INGRESO', situacionJuridica: 'PROCESADO',
+    nivelRiesgo: 1, regionProcedenciaId: 'LIMA', fechaIngreso: '2026-10-01',
+  };
+
+  it('un interno ajeno y uno inexistente responden igual, y el intento queda auditado', async () => {
+    const ajeno = await Interno.findOne({ establecimiento_id: 'EP-LURIGANCHO' }).lean();
+    const token = await iniciarSesion(app, 'director.ep-tacna');
+    const a = await request(app).get(`/api/internos/${ajeno!._id}`).set('Authorization', token);
+    const b = await request(app).get('/api/internos/INT-999998').set('Authorization', token);
+    expect(a.status).toBe(404);
+    expect(a.status).toBe(b.status);
+    expect({ error: a.body.error, codigo: a.body.codigo }).toEqual({ error: b.body.error, codigo: b.body.codigo });
+    expect(await Auditoria.exists({ accion: 'CONSULTA_INTERNO', entidad_id: String(ajeno!._id), resultado: 'DENEGADO' })).toBeTruthy();
+  });
+
+  it('el responsable regional ve internos de su oficina y recibe 404 en otra', async () => {
+    const token = await iniciarSesion(app, 'regional.sur');
+    const ids = (await Establecimiento.find({ oficina_id: 'SUR' }, { _id: 1 }).lean()).map((e) => e._id);
+    const propio = await Interno.findOne({ establecimiento_id: { $in: ids } }).lean();
+    const ajeno = await Interno.findOne({ establecimiento_id: 'EP-LURIGANCHO' }).lean();
+    await request(app).get(`/api/internos/${propio!._id}`).set('Authorization', token).expect(200);
+    await request(app).get(`/api/internos/${ajeno!._id}`).set('Authorization', token).expect(404);
+  });
+
+  it('el director registra y corrige fichas solo en su establecimiento', async () => {
+    const token = await iniciarSesion(app, 'director.ep-tacna');
+    const creada = await request(app).post('/api/internos').set('Authorization', token)
+      .send({ ...fichaNueva, establecimientoId: 'EP-TACNA' }).expect(201);
+    await request(app).post('/api/internos').set('Authorization', token)
+      .send({ ...fichaNueva, establecimientoId: 'EP-LURIGANCHO' }).expect(403);
+    expect(await Auditoria.exists({ accion: 'REGISTRAR_INTERNO', resultado: 'DENEGADO' })).toBeTruthy();
+
+    const corregida = await request(app).patch(`/api/internos/${creada.body.id}`).set('Authorization', token)
+      .send({ nivelRiesgo: 3 }).expect(200);
+    expect(corregida.body.nivelRiesgo).toBe(3);
+    await request(app).patch(`/api/internos/${creada.body.id}`).set('Authorization', token)
+      .send({ establecimientoId: 'EP-LURIGANCHO' }).expect(400);
+
+    const ajeno = await Interno.findOne({ establecimiento_id: 'EP-LURIGANCHO' }).lean();
+    await request(app).patch(`/api/internos/${ajeno!._id}`).set('Authorization', token).send({ nivelRiesgo: 2 }).expect(404);
+  });
+
+  it('un responsable regional no registra fichas', async () => {
+    const token = await iniciarSesion(app, 'regional.sur');
+    await request(app).post('/api/internos').set('Authorization', token)
+      .send({ ...fichaNueva, establecimientoId: 'EP-TACNA' }).expect(403);
   });
 });

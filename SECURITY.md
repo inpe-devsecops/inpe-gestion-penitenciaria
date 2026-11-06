@@ -11,7 +11,7 @@ No abras un *issue* público. Escribe a los mantenedores del equipo por el canal
 | Control | Requerimiento | Dónde |
 |---|---|---|
 | Autenticación obligatoria; JWT de 15 min con `jti` comprobado en cada petición y revocado al cerrar sesión | RNF-01, RNF-04 | `backend/src/seguridad/auth.ts`, `backend/src/modulos/auth/rutas.ts` |
-| Autorización por rol **y** ámbito territorial; los accesos fuera de ámbito se rechazan y se auditan | RNF-02 | `backend/src/seguridad/auth.ts` y cada módulo |
+| Autorización por rol **y** ámbito territorial; los accesos fuera de ámbito se rechazan y se auditan; un interno ajeno responde 404 (anti-enumeración) | RNF-02 | `backend/src/seguridad/auth.ts` y cada módulo |
 | Contraseñas con Argon2id; bloqueo de 15 min tras 5 intentos; mismo mensaje y tiempo para usuario inexistente | RNF-03 | `backend/src/modulos/auth/rutas.ts` |
 | Validación de entradas con Zod (`.strict()`), errores con detalle por campo y sin información técnica | RNF-06, RNF-23 | `backend/src/lib/validacion.ts`, `backend/src/lib/errores.ts` |
 | Rechazo de operadores NoSQL (`$ne`, `$where`, claves con punto) en cuerpo, query y parámetros | RNF-07 | `backend/src/seguridad/sanitizar.ts` |
