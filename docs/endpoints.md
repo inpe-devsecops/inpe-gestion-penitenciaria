@@ -8,8 +8,8 @@ Errores uniformes: `{ "error": "mensaje para el usuario", "codigo": "...", "deta
 |---|---|---|
 | 400 | `VALIDACION` / `SOLICITUD_INVALIDA` | Entrada inválida, campos no previstos u operadores NoSQL |
 | 401 | `NO_AUTENTICADO` | Sin token, token alterado, expirado o sesión revocada |
-| 403 | `SIN_PERMISO` | Rol insuficiente, fuera del ámbito o segregación de funciones (queda auditado) |
-| 404 | `NO_ENCONTRADO` | El recurso no existe |
+| 403 | `SIN_PERMISO` | Rol insuficiente, establecimiento fuera del ámbito o segregación de funciones (queda auditado) |
+| 404 | `NO_ENCONTRADO` | El recurso no existe, o es un interno fuera del ámbito del usuario (anti-enumeración; queda auditado) |
 | 409 | `CONFLICTO` | Unicidad o flujo (p. ej. el interno ya tiene un traslado en trámite) |
 | 422 | `REGLA_DE_NEGOCIO` | Regla del dominio o validador de la base de datos |
 | 423 | `BLOQUEADO` | Cuenta bloqueada 15 minutos tras 5 intentos fallidos |
