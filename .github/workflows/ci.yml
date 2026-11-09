@@ -127,6 +127,7 @@ jobs:
   deploy-prod:
     name: Despliegue a Producción (Render)
     needs: dast
+    if: vars.DEV_URL != ''
     runs-on: ubuntu-latest
     environment: produccion
     env:

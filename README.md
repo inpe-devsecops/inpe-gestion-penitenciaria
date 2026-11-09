@@ -84,7 +84,7 @@ El token vive solo en memoria del navegador (no en `localStorage`): al recargar 
 | Motor: descartes con motivo, ranking y ejemplo de la Tabla 12 (0.770 / 0.720) | `tests/unitarias/motor.test.ts` |
 | Alertas sin duplicados, cambio de severidad y prospectiva | `tests/unitarias/proyeccion-alertas.test.ts`, `flujo.test.ts` |
 | Autoaprobación bloqueada en la API **y** en el validador de la colección | `flujo.test.ts` |
-| Acceso fuera del ámbito (403 auditado), token alterado o revocado, bloqueo tras 5 intentos | `tests/integracion/seguridad.test.ts` |
+| Acceso fuera del ámbito (403 auditado en establecimientos; 404 auditado en fichas de internos), token alterado o revocado, bloqueo tras 5 intentos | `tests/integracion/seguridad.test.ts` |
 | Inyección NoSQL y minimización de datos | `seguridad.test.ts` |
 | Auditoría inalterable | `seguridad.test.ts` |
 
