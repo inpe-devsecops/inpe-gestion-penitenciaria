@@ -64,18 +64,20 @@ export function Login() {
               {enviando ? 'Verificando...' : 'Ingresar'}
             </button>
           </form>
-          <div className="login__demo">
-            <h4>Usuarios de prueba (entorno local)</h4>
-            {CUENTAS.map((c) => (
-              <button key={c.username} type="button" className="login__cuenta" onClick={() => { setUsername(c.username); setError(null); }}>
-                <span>{c.username}</span>
-                <span className="login__cuenta-rol">{c.rol}</span>
-              </button>
-            ))}
-            <p className="campo__ayuda" style={{ marginTop: '0.5rem' }}>
-              La contraseña es la definida en SEED_PASSWORD. Ocupación real del INPE (enero 2026); las fichas de internos y los usuarios son ficticios.
-            </p>
-          </div>
+          {import.meta.env.DEV && (
+            <div className="login__demo">
+              <h4>Usuarios de prueba (entorno local)</h4>
+              {CUENTAS.map((c) => (
+                <button key={c.username} type="button" className="login__cuenta" onClick={() => { setUsername(c.username); setError(null); }}>
+                  <span>{c.username}</span>
+                  <span className="login__cuenta-rol">{c.rol}</span>
+                </button>
+              ))}
+              <p className="campo__ayuda" style={{ marginTop: '0.5rem' }}>
+                La contraseña es la definida en SEED_PASSWORD. Ocupación real del INPE (enero 2026); las fichas de internos y los usuarios son ficticios.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>
