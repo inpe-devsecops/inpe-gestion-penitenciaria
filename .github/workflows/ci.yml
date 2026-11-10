@@ -117,7 +117,7 @@ jobs:
       - uses: actions/checkout@v7
       - name: ZAP baseline
         if: vars.DEV_URL != ''
-        uses: zaproxy/action-baseline@v0.14.0
+        uses: zaproxy/action-baseline@v0.15.0
         with:
           target: ${{ vars.DEV_URL }}
           rules_file_name: .zap/reglas.tsv
