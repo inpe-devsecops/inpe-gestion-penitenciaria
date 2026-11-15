@@ -49,6 +49,11 @@ export function Alertas() {
               <option value="">Todas</option><option value="CRITICO">Crítico</option><option value="SEVERO">Severo</option><option value="ATENCION">Atención</option><option value="PROSPECTIVA">Prospectiva</option>
             </select>
           </Campo>
+          <Campo id="condicion" etiqueta="Condición">
+            <select id="condicion" value={f.condicion} onChange={(e) => { setF({ ...f, condicion: e.target.value }); setPagina(1); }}>
+              <option value="">Todas</option><option value="HACINAMIENTO">Hacinamiento</option><option value="PROSPECTIVA">Prospectiva</option>
+            </select>
+          </Campo>
         </div>
       </Tarjeta>
       <div style={{ marginTop: '1rem' }}>
