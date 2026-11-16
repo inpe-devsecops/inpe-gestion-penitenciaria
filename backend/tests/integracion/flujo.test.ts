@@ -126,7 +126,8 @@ describe('Flujo del traslado con segregación de funciones (RF-11 a RF-24)', () 
   it('el responsable regional no solicita traslados de internos de otra oficina', async () => {
     const otro = await Interno.findOne({ establecimiento_id: 'EP-TACNA' }).lean();
     await request(app).post('/api/traslados').set('Authorization', regionalLima)
-      .send({ internoId: otro!._id, causal: 'HACINAMIENTO', fundamento: 'Intento fuera del ámbito regional asignado' }).expect(403);
+      .send({ internoId: otro!._id, causal: 'HACINAMIENTO', fundamento: 'Intento fuera del ámbito regional asignado' }).expect(404, { error: 'Interno no encontrado', codigo: 'NO_ENCONTRADO' });
+    expect(await Auditoria.exists({ accion: 'SOLICITAR_TRASLADO', resultado: 'DENEGADO', entidad_id: otro!._id })).toBeTruthy();
   });
 
   it('registra la solicitud y conserva la evaluación de todos los establecimientos (RF-11, RF-19)', async () => {
@@ -183,7 +184,7 @@ describe('Flujo del traslado con segregación de funciones (RF-11 a RF-24)', () 
     const [origenAntes, destinoAntes] = await Promise.all([Establecimiento.findById('EP-LURIGANCHO').lean(), Establecimiento.findById(destinoId).lean()]);
 
     const ajeno = await iniciarSesion(app, 'director.ep-tacna');
-    await request(app).post(`/api/traslados/${solicitudId}/ejecutar`).set('Authorization', ajeno).send({}).expect(403);
+    await request(app).post(`/api/traslados/${solicitudId}/ejecutar`).set('Authorization', ajeno).send({}).expect(404);
     await request(app).post(`/api/traslados/${solicitudId}/ejecutar`).set('Authorization', central).send({}).expect(403);
 
     const director = await iniciarSesion(app, 'director.ep-lurigancho');
