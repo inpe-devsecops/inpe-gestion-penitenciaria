@@ -31,7 +31,7 @@ jobs:
     env:
       MONGODB_URI_TEST: mongodb://127.0.0.1:27017
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -51,7 +51,7 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -67,7 +67,7 @@ jobs:
     container:
       image: semgrep/semgrep
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Semgrep (falla con hallazgos de severidad ERROR)
         run: semgrep scan --config p/javascript --config p/typescript --config p/nodejs --config p/react --config p/secrets --severity ERROR --error --exclude datos
 
@@ -75,7 +75,7 @@ jobs:
     name: Detección de secretos - Gitleaks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Gitleaks
         run: docker run --rm -v "${{ github.workspace }}:/repo" zricethezav/gitleaks:latest detect --source /repo --no-git --redact -v
 
@@ -84,7 +84,7 @@ jobs:
     needs: [backend, frontend, sast, secretos]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: docker build -t inpe-devsecops-backend:${{ github.sha }} backend
 
   deploy-dev:
@@ -114,7 +114,7 @@ jobs:
       contents: read
       issues: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: ZAP baseline
         if: vars.DEV_URL != ''
         uses: zaproxy/action-baseline@v0.14.0
