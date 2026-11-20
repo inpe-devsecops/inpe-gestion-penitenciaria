@@ -48,13 +48,13 @@ export function DetalleEstablecimiento() {
             <div style={{ width: '100%', height: 260 }}>
               <ResponsiveContainer>
                 <LineChart data={serie.data} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#21262d" vertical={false} />
-                  <XAxis dataKey="corte" tickFormatter={corte} tick={{ fill: '#8b949e', fontSize: 11 }} stroke="#30363d" />
-                  <YAxis domain={[0, (max: number) => Math.max(max, critico ?? 0) * 1.05]} tickFormatter={(v: number) => numero(Math.round(v))} tick={{ fill: '#8b949e', fontSize: 11 }} stroke="#30363d" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--borde-suave)" vertical={false} />
+                  <XAxis dataKey="corte" tickFormatter={corte} tick={{ fill: 'var(--texto-suave)', fontSize: 11 }} stroke="var(--borde)" />
+                  <YAxis domain={[0, (max: number) => Math.max(max, critico ?? 0) * 1.05]} tickFormatter={(v: number) => numero(Math.round(v))} tick={{ fill: 'var(--texto-suave)', fontSize: 11 }} stroke="var(--borde)" />
                   <Tooltip {...ESTILO_TOOLTIP} labelFormatter={(c: string) => corte(c)} formatter={(v: number, n: string) => [numero(v), n === 'poblacion' ? 'Población' : 'Capacidad']} />
-                  <Line type="monotone" dataKey="poblacion" stroke="#2f81f7" strokeWidth={2} dot={{ r: 2 }} />
-                  <Line type="stepAfter" dataKey="capacidad" stroke="#3fb950" strokeWidth={1.5} dot={false} />
-                  {critico && <ReferenceLine y={critico} stroke="#db61a2" strokeDasharray="6 4" />}
+                  <Line type="monotone" dataKey="poblacion" stroke="var(--acento)" strokeWidth={2} dot={{ r: 2 }} />
+                  <Line type="stepAfter" dataKey="capacidad" stroke="var(--ok)" strokeWidth={1.5} dot={false} />
+                  {critico && <ReferenceLine y={critico} stroke="var(--critico)" strokeDasharray="6 4" />}
                 </LineChart>
               </ResponsiveContainer>
             </div>

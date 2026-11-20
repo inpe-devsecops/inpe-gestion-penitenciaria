@@ -3,6 +3,7 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { mensajeError } from '../api/cliente';
 import { useAuth } from '../auth/AuthContext';
 import { Mensaje } from '../componentes/Comunes';
+import { MarcaSistema } from '../componentes/MarcaSistema';
 
 // Usuarios ficticios creados por el seed (la contraseña es la de SEED_PASSWORD; nunca se muestra aquí)
 const CUENTAS = [
@@ -42,10 +43,7 @@ export function Login() {
   return (
     <div className="login">
       <div className="login__caja">
-        <div className="login__marca">
-          <span className="marca__sigla">INPE</span>
-          <strong>inpe-devsecops</strong>
-        </div>
+        <MarcaSistema />
         <div className="tarjeta">
           <h1 className="login__titulo">Iniciar sesión</h1>
           <p className="login__subtitulo">Sistema de Gestión y Análisis de Población Penitenciaria</p>
