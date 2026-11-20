@@ -67,6 +67,12 @@ Usuarios de prueba (todos con la contraseña de `SEED_PASSWORD`): `admin.central
 
 El token vive solo en memoria del navegador (no en `localStorage`): al recargar la página hay que volver a iniciar sesión. Es una decisión de seguridad frente a XSS.
 
+## Identidad visual y navegación
+
+La interfaz usa la identidad propia **Vigía Territorial**: azul institucional y petróleo, fondo claro y ámbar/rojo para alertas. El símbolo se dibuja en `frontend/src/componentes/MarcaSistema.tsx`; no utiliza el logotipo oficial del INPE.
+
+Para conservar la identidad en las pantallas nuevas, reutilicen los componentes de `frontend/src/componentes/Comunes.tsx` y las variables de `frontend/src/estilos/global.css` (`--acento`, `--fondo`, `--texto`, `--aviso`, `--peligro` y `--critico`). El `Layout` define las opciones visibles por rol; esos filtros son solo de presentación: cada operación debe seguir protegida y limitada por ámbito en la API.
+
 ## Datos
 
 - **Reales**: capacidad y población de los 69 establecimientos en enero de 2025 y enero de 2026 (Anexo 06 del Informe Estadístico del INPE). El panel cuadra exactamente: 41,764 plazas, 103,717 internos, 148.34 %. Ver `docs/datos-inpe/`.

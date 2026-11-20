@@ -7,10 +7,10 @@ import { CabeceraPagina, Cargando, ETIQUETA_NIVEL, Hacinamiento, Kpi, Mensaje, T
 import type { Establecimiento, Panel } from '../tipos';
 
 export const COLOR_TONO: Record<Tono, string> = {
-  ok: '#3fb950', aviso: '#d29922', peligro: '#f85149', critico: '#db61a2', info: '#58a6ff', neutro: '#8b949e',
+  ok: 'var(--ok)', aviso: 'var(--aviso)', peligro: 'var(--peligro)', critico: 'var(--critico)', info: 'var(--info)', neutro: 'var(--texto-tenue)',
 };
-export const ESTILO_TOOLTIP = { contentStyle: { background: '#161b22', border: '1px solid #30363d', borderRadius: 6, fontSize: 12 }, labelStyle: { color: '#e6edf3' } };
-const EJE = { tick: { fill: '#8b949e', fontSize: 11 }, stroke: '#30363d' };
+export const ESTILO_TOOLTIP = { contentStyle: { background: 'var(--fondo-panel)', border: '1px solid var(--borde)', borderRadius: 6, fontSize: 12, color: 'var(--texto)' }, labelStyle: { color: 'var(--texto)' } };
+const EJE = { tick: { fill: 'var(--texto-suave)', fontSize: 11 }, stroke: 'var(--borde)' };
 
 function TablaEstablecimientos({ filas, titulo, nota, vacio, umbrales }: { filas: Establecimiento[]; titulo: string; nota: string; vacio: string; umbrales: Panel['umbrales'] }) {
   return (
@@ -72,11 +72,11 @@ export function PanelPrincipal() {
           <div style={{ width: '100%', height: 260 }}>
             <ResponsiveContainer>
               <LineChart data={data.serie} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#21262d" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--borde-suave)" vertical={false} />
                 <XAxis dataKey="corte" tickFormatter={corte} {...EJE} />
                 <YAxis domain={['auto', 'auto']} tickFormatter={(v: number) => `${v} %`} {...EJE} />
                 <Tooltip {...ESTILO_TOOLTIP} labelFormatter={(c: string) => corte(c)} formatter={(v: number) => [`${v.toFixed(1)} %`, 'Hacinamiento']} />
-                <Line type="monotone" dataKey="hacinamientoPct" stroke="#2f81f7" strokeWidth={2} dot={{ r: 2 }} />
+                <Line type="monotone" dataKey="hacinamientoPct" stroke="var(--acento)" strokeWidth={2} dot={{ r: 2 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -86,7 +86,7 @@ export function PanelPrincipal() {
             <div style={{ width: '100%', height: 260 }}>
               <ResponsiveContainer>
                 <BarChart data={grafico} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#21262d" vertical={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--borde-suave)" vertical={false} />
                   <XAxis dataKey="oficina" {...EJE} />
                   <YAxis tickFormatter={(v: number) => `${v} %`} {...EJE} />
                   <Tooltip {...ESTILO_TOOLTIP} formatter={(v: number) => [`${v.toFixed(1)} %`, 'Hacinamiento']} />
