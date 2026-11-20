@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import request from 'supertest';
 import { Alerta, Auditoria, DecisionTraslado, Establecimiento, EvaluacionDestino, Interno } from '../../src/modelos';
+import { evaluarAlertas } from '../../src/modulos/alertas/servicio';
 import { cerrarBase, iniciarSesion, nuevaApp, prepararBase } from './entorno';
 
 const app = nuevaApp();
@@ -8,11 +9,12 @@ let central: string;
 let central2: string;
 let regionalLima: string;
 let auditor: string;
+let directorLurigancho: string;
 
 beforeAll(async () => {
   await prepararBase('flujo');
-  [central, central2, regionalLima, auditor] = await Promise.all(
-    ['admin.central', 'admin.central2', 'regional.lima', 'auditor'].map((u) => iniciarSesion(app, u)),
+  [central, central2, regionalLima, auditor, directorLurigancho] = await Promise.all(
+    ['admin.central', 'admin.central2', 'regional.lima', 'auditor', 'director.ep-lurigancho'].map((u) => iniciarSesion(app, u)),
   );
 });
 afterAll(cerrarBase);
@@ -62,6 +64,48 @@ describe('Alertas (RF-07 a RF-09)', () => {
     expect(a!.severidad).toBe('CRITICO');
     const { _id: _ignorado, ...copia } = a!;
     await expect(Alerta.create(copia)).rejects.toMatchObject({ code: 11000 });
+  });
+
+  it('al pasar de 95 % a 105 % de sobrepoblación crea o actualiza una alerta severa sin duplicarla', async () => {
+    const establecimientoId = 'EP-ALERTA1';
+    await Establecimiento.create({
+      _id: establecimientoId, nombre: 'E.P. de prueba de alertas', oficina_id: 'LIMA', departamento: 'Lima',
+      ubicacion: { latitud: -12.0464, longitud: -77.0428 }, capacidad_oficial: 100, poblacion_actual: 195,
+      techo_seguridad: 'MEDIANA', regimenes_admitidos: ['MINIMA', 'MEDIANA'], genero_poblacion: 'MASCULINO',
+      fases_tratamiento: ['ORDINARIO'], proporcion_alto_riesgo: 0.1, activo: true,
+    });
+
+    await evaluarAlertas([establecimientoId]);
+    const actualizacion = await request(app).patch(`/api/establecimientos/${establecimientoId}/ocupacion`)
+      .set('Authorization', central)
+      .send({ poblacion: 205, motivo: 'Prueba de cambio del umbral de sobrepoblación' })
+      .expect(200);
+    expect(actualizacion.body).toEqual({ poblacion: 205, capacidad: 100 });
+
+    const vigentes = await Alerta.find({ establecimiento_id: establecimientoId, condicion: 'HACINAMIENTO', vigente: true }).lean();
+    expect(vigentes).toHaveLength(1);
+    expect(vigentes[0]).toMatchObject({ severidad: 'SEVERO', estado: 'ACTIVA', valor_observado: 105 });
+  });
+
+  it('el director solo recibe alertas vigentes de su establecimiento', async () => {
+    const r = await request(app).get('/api/alertas?soloVigentes=true&porPagina=100')
+      .set('Authorization', directorLurigancho).expect(200);
+
+    expect(r.body.datos.length).toBeGreaterThan(0);
+    expect(r.body.datos.every((a: { establecimientoId: string }) => a.establecimientoId === 'EP-LURIGANCHO')).toBe(true);
+
+    await request(app).get('/api/alertas?establecimientoId=EP-TACNA')
+      .set('Authorization', directorLurigancho).expect(404);
+    expect(await Auditoria.findOne({
+      accion: 'CONSULTA_ALERTAS', entidad_id: 'EP-TACNA', resultado: 'DENEGADO', rol: 'DIRECTOR_ESTABLECIMIENTO',
+    }).lean()).not.toBeNull();
+  });
+
+  it('el auditor no puede forzar la evaluación y el intento queda auditado', async () => {
+    await request(app).post('/api/alertas/evaluar').set('Authorization', auditor).expect(403);
+    expect(await Auditoria.findOne({
+      accion: 'ACCESO_ALERTAS', entidad: 'alertas', resultado: 'DENEGADO', rol: 'AUDITOR',
+    }).lean()).not.toBeNull();
   });
 
   it('cambiar un umbral queda auditado con valor anterior y nuevo, y reclasifica las alertas (RNF-13)', async () => {
