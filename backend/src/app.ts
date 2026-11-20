@@ -43,9 +43,10 @@ export function crearApp(d: Dependencias) {
     message: { error: 'Demasiadas peticiones, intente en un minuto', codigo: 'LIMITE_EXCEDIDO' } }));
   app.use(rechazarOperadoresNoSQL);
 
+  // Health check sin datos internos: solo el estado y el commit desplegado (el repositorio es público)
   app.get('/health', (_req, res) => {
     const db = d.baseDeDatosLista ? d.baseDeDatosLista() : true;
-    res.status(db ? 200 : 503).json({ status: db ? 'ok' : 'degradado' });
+    res.status(db ? 200 : 503).json({ status: db ? 'ok' : 'degradado', version: d.config.version ?? 'local' });
   });
 
   app.use('/api/auth', rateLimit({ windowMs: 60_000, limit: d.limiteLogin ?? 10, standardHeaders: 'draft-7', legacyHeaders: false,
