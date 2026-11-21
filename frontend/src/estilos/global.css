@@ -1,37 +1,37 @@
 /* =====================================================================
-   Plataforma de Gestion de Cupos y Traslados Penitenciarios - INPE
+   Vigia Territorial - gestion segura de la poblacion penitenciaria
    Hoja de estilos global. Sin frameworks: variables CSS y convenciones
    de nombres en espanol para que el equipo pueda leerla sin conocer
    ninguna libreria.
    ===================================================================== */
 
 :root {
-  --fondo: #0d1117;
-  --fondo-panel: #161b22;
-  --fondo-panel-alto: #1c2128;
-  --borde: #30363d;
-  --borde-suave: #21262d;
+  --fondo: #f3f6f7;
+  --fondo-panel: #fff;
+  --fondo-panel-alto: #edf3f5;
+  --borde: #cdd9de;
+  --borde-suave: #e4ecef;
 
-  --texto: #e6edf3;
-  --texto-suave: #8b949e;
-  --texto-tenue: #6e7681;
+  --texto: #182d37;
+  --texto-suave: #536b75;
+  --texto-tenue: #5d737d;
 
-  --acento: #2f81f7;
-  --acento-suave: #1f6feb33;
+  --acento: #174a6e;
+  --acento-suave: #e7f0f5;
 
-  --ok: #3fb950;
-  --ok-suave: #3fb95022;
-  --aviso: #d29922;
-  --aviso-suave: #d2992222;
-  --peligro: #f85149;
-  --peligro-suave: #f8514922;
-  --critico: #db61a2;
-  --critico-suave: #db61a222;
-  --info: #58a6ff;
+  --ok: #26734d;
+  --ok-suave: #e8f4ec;
+  --aviso: #8a5700;
+  --aviso-suave: #fff4dc;
+  --peligro: #b42318;
+  --peligro-suave: #fff0ee;
+  --critico: #8b1e3f;
+  --critico-suave: #f8e9ee;
+  --info: #1d5b75;
 
   --radio: 8px;
   --radio-chico: 5px;
-  --sombra: 0 2px 8px rgba(0, 0, 0, 0.35);
+  --sombra: 0 2px 8px rgba(24, 45, 55, 0.12);
 
   --altura-encabezado: 56px;
   --ancho-menu: 236px;
@@ -129,29 +129,40 @@ table {
   height: 100%;
 }
 
-.marca {
+.marca-sistema {
   grid-area: marca;
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.65rem;
+  min-width: 0;
   padding: 0 1rem;
   background: var(--fondo-panel);
-  border-bottom: 1px solid var(--borde);
   border-right: 1px solid var(--borde);
-  font-weight: 600;
+  border-bottom: 1px solid var(--borde);
+}
+
+.marca-sistema__simbolo {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  color: var(--acento);
+}
+
+.marca-sistema__texto {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.marca-sistema__texto strong {
+  color: var(--texto);
+  font-size: 0.95rem;
   letter-spacing: 0.02em;
 }
 
-.marca__sigla {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radio-chico);
-  background: var(--acento);
-  color: #fff;
-  font-size: 0.75rem;
-  font-weight: 700;
+.marca-sistema__texto small {
+  color: var(--texto-suave);
+  font-size: 0.68rem;
 }
 
 .encabezado {
@@ -234,7 +245,7 @@ table {
 
 .menu__enlace--activo {
   background: var(--acento-suave);
-  color: var(--texto);
+  color: var(--acento);
   font-weight: 500;
 }
 
@@ -250,6 +261,7 @@ table {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--texto-tenue);
+  font-weight: 700;
 }
 
 .menu__contador {
@@ -496,22 +508,22 @@ table {
 .distintivo--ok {
   background: var(--ok-suave);
   color: var(--ok);
-  border-color: #3fb95044;
+  border-color: #b8ddc6;
 }
 .distintivo--aviso {
   background: var(--aviso-suave);
   color: var(--aviso);
-  border-color: #d2992244;
+  border-color: #ead39f;
 }
 .distintivo--peligro {
   background: var(--peligro-suave);
   color: var(--peligro);
-  border-color: #f8514944;
+  border-color: #efc0bb;
 }
 .distintivo--critico {
   background: var(--critico-suave);
   color: var(--critico);
-  border-color: #db61a244;
+  border-color: #e5bfcc;
 }
 .distintivo--neutro {
   background: var(--fondo-panel-alto);
@@ -521,7 +533,7 @@ table {
 .distintivo--info {
   background: var(--acento-suave);
   color: var(--info);
-  border-color: #2f81f744;
+  border-color: #bfd2de;
 }
 
 /* --------------------------------------------------------------------- */
@@ -596,8 +608,8 @@ table {
 }
 
 .boton:hover:not(:disabled) {
-  background: #262c36;
-  border-color: #3d444d;
+  background: var(--fondo-panel-alto);
+  border-color: #aebfc6;
 }
 
 .boton:disabled {
@@ -611,8 +623,8 @@ table {
   color: #fff;
 }
 .boton--primario:hover:not(:disabled) {
-  background: #388bfd;
-  border-color: #388bfd;
+  background: #123b59;
+  border-color: #123b59;
 }
 
 .boton--peligro {
@@ -621,17 +633,17 @@ table {
   color: #fff;
 }
 .boton--peligro:hover:not(:disabled) {
-  background: #ff6a63;
-  border-color: #ff6a63;
+  background: #8f1d14;
+  border-color: #8f1d14;
 }
 
 .boton--exito {
-  background: #238636;
-  border-color: #2ea043;
+  background: var(--ok);
+  border-color: var(--ok);
   color: #fff;
 }
 .boton--exito:hover:not(:disabled) {
-  background: #2ea043;
+  background: #1d5a3b;
 }
 
 .boton--chico {
@@ -678,7 +690,7 @@ table {
   place-items: center;
   min-height: 100%;
   padding: 2rem 1rem;
-  background: radial-gradient(circle at 50% 0%, #12181f 0%, var(--fondo) 55%);
+  background: radial-gradient(circle at 50% 0%, #e6eef1 0%, var(--fondo) 55%);
 }
 
 .login__caja {
@@ -686,18 +698,25 @@ table {
   max-width: 400px;
 }
 
-.login__marca {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1.5rem;
+.login .marca-sistema {
   justify-content: center;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  margin-bottom: 1.5rem;
 }
 
-.login__marca .marca__sigla {
-  width: 40px;
-  height: 40px;
-  font-size: 0.9rem;
+.login .marca-sistema__simbolo {
+  width: 44px;
+  height: 44px;
+}
+
+.login .marca-sistema__texto strong {
+  font-size: 1.15rem;
+}
+
+.login .marca-sistema__texto small {
+  font-size: 0.75rem;
 }
 
 .login__titulo {
@@ -770,19 +789,19 @@ table {
 
 .alerta-caja--error {
   background: var(--peligro-suave);
-  border-color: #f8514944;
-  color: #ff9d97;
+  border-color: #efc0bb;
+  color: #8f1d14;
 }
 
 .alerta-caja--ok {
   background: var(--ok-suave);
-  border-color: #3fb95044;
-  color: #7ee787;
+  border-color: #b8ddc6;
+  color: #1d5a3b;
 }
 
 .alerta-caja--info {
   background: var(--acento-suave);
-  border-color: #2f81f744;
+  border-color: #bfd2de;
   color: var(--info);
 }
 
@@ -827,8 +846,8 @@ table {
 }
 
 .candidato--primero .candidato__puesto {
-  background: #238636;
-  border-color: #2ea043;
+  background: var(--ok);
+  border-color: var(--ok);
   color: #fff;
 }
 
@@ -902,7 +921,7 @@ table {
 .modal-fondo {
   position: fixed;
   inset: 0;
-  background: rgba(1, 4, 9, 0.75);
+  background: rgba(24, 45, 55, 0.58);
   display: grid;
   place-items: center;
   padding: 1.5rem;
@@ -1019,6 +1038,10 @@ table {
     overflow-x: auto;
     border-right: none;
     border-bottom: 1px solid var(--borde);
+  }
+  .marca-sistema {
+    padding: 0.55rem 1rem;
+    border-right: none;
   }
   .menu__separador {
     display: none;

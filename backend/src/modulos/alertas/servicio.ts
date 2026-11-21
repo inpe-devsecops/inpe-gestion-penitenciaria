@@ -1,7 +1,7 @@
 import type { Request } from 'express';
 import { ORDEN_SEVERIDAD, type CondicionAlerta, type EstadoAlerta, type Severidad } from '../../dominio/constantes';
 import { auditar } from '../../lib/auditoria';
-import { noEncontrado, reglaDeNegocio, sinPermiso } from '../../lib/errores';
+import { noEncontrado, reglaDeNegocio } from '../../lib/errores';
 import { Alerta, Establecimiento, OcupacionHistorica, type EstablecimientoDoc } from '../../modelos';
 import { establecimientosDelAmbito, puedeVerEstablecimiento } from '../../seguridad/auth';
 import { ocupacion } from '../establecimientos/metricas';
@@ -73,7 +73,13 @@ export async function listarAlertas(req: Request, f: FiltrosAlertas) {
   const filtro: Record<string, unknown> = {};
   if (ambito) filtro.establecimiento_id = { $in: ambito };
   if (f.establecimientoId) {
-    if (ambito && !ambito.includes(f.establecimientoId)) throw sinPermiso('El establecimiento no pertenece a su ámbito');
+    if (ambito && !ambito.includes(f.establecimientoId)) {
+      await auditar(req, {
+        accion: 'CONSULTA_ALERTAS', entidad: 'alertas', entidad_id: f.establecimientoId,
+        resultado: 'DENEGADO', detalle: 'Establecimiento fuera del ámbito',
+      });
+      throw noEncontrado('Establecimiento');
+    }
     filtro.establecimiento_id = f.establecimientoId;
   }
   if (f.soloVigentes) filtro.vigente = true;
@@ -103,7 +109,14 @@ async function alertaVisible(req: Request, id: string) {
   const a = await Alerta.findById(id).lean();
   if (!a) throw noEncontrado('Alerta');
   const e = await Establecimiento.findById(a.establecimiento_id, { oficina_id: 1 }).lean();
-  if (!e || !puedeVerEstablecimiento(req.usuario!, e)) throw sinPermiso('La alerta no pertenece a su ámbito');
+  if (!e) throw noEncontrado('Alerta');
+  if (!puedeVerEstablecimiento(req.usuario!, e)) {
+    await auditar(req, {
+      accion: 'CONSULTA_ALERTA', entidad: 'alertas', entidad_id: id,
+      resultado: 'DENEGADO', detalle: 'Alerta fuera del ámbito',
+    });
+    throw noEncontrado('Alerta');
+  }
   return a;
 }
 
