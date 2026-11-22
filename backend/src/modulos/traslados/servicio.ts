@@ -21,6 +21,11 @@ import { evaluarDestinos, type DestinoMotor, type InternoMotor, type ResultadoDe
 
 const clave = (req: Request): Buffer => req.app.locals.dataKey as Buffer;
 
+// El texto libre puede describir a la persona: el AUDITOR (solo lectura, sin datos personales) no lo recibe.
+const RESERVADO = 'Reservado: el rol Auditor no accede al texto del fundamento';
+const textoLibre = (req: Request, cifrado: Parameters<typeof descifrar>[0]): string =>
+  req.usuario!.rol === 'AUDITOR' ? RESERVADO : descifrar(cifrado, clave(req));
+
 // ----- Entradas del motor
 
 function aDestino(e: EstablecimientoDoc): DestinoMotor {
@@ -204,7 +209,7 @@ export async function obtenerSolicitud(req: Request, id: string) {
     || (estNombres.get(a.destino_id) ?? '').localeCompare(estNombres.get(b.destino_id) ?? '', 'es'));
   return {
     ...aResumen(s, n, interno),
-    fundamento: descifrar(s.fundamento_cifrado, clave(req)),
+    fundamento: textoLibre(req, s.fundamento_cifrado),
     pesos: s.pesos,
     evaluaciones: evals.map((e) => ({
       destinoId: e.destino_id, destino: estNombres.get(e.destino_id) ?? e.destino_id, elegible: e.elegible, posicion: e.posicion ?? null,
@@ -214,7 +219,7 @@ export async function obtenerSolicitud(req: Request, id: string) {
     decision: decision ? {
       resultado: decision.resultado, decididoPorId: decision.decidido_por, decididoPor: n.usr.get(decision.decidido_por) ?? decision.decidido_por,
       destinoId: decision.destino_id ?? null, destino: decision.destino_id ? estNombres.get(decision.destino_id) ?? decision.destino_id : null,
-      seApartaDeRecomendacion: decision.se_aparta_de_recomendacion, fundamento: descifrar(decision.fundamento_cifrado, clave(req)),
+      seApartaDeRecomendacion: decision.se_aparta_de_recomendacion, fundamento: textoLibre(req, decision.fundamento_cifrado),
       decididaEn: decision.decidida_en,
     } : null,
     permisos: permisos(req, s),

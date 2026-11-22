@@ -251,6 +251,18 @@ describe('Flujo del traslado con segregación de funciones (RF-11 a RF-24)', () 
     expect(ejec.usuario).toBeTruthy();
   });
 
+  it('el auditor consulta el traslado pero no lee el texto libre del fundamento', async () => {
+    const url = '/api/traslados/' + solicitudId;
+    const r = await request(app).get(url).set('Authorization', auditor).expect(200);
+    const texto = JSON.stringify(r.body);
+    expect(texto).not.toMatch(/Lurigancho supera/);
+    expect(texto).not.toMatch(/Se acoge el destino/);
+    expect(r.body.fundamento).toMatch(/^Reservado/);
+    expect(r.body.decision.fundamento).toMatch(/^Reservado/);
+    const propio = await request(app).get(url).set('Authorization', central2).expect(200);
+    expect(propio.body.fundamento).toMatch(/Lurigancho supera/);
+  });
+
   it('rechaza con motivo obligatorio (RF-22)', async () => {
     const otro = await Interno.findOne({ establecimiento_id: 'EP-HUARAL' }).lean();
     const s = await request(app).post('/api/traslados').set('Authorization', regionalLima)
