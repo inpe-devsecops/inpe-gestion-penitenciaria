@@ -26,6 +26,12 @@ const RESERVADO = 'Reservado: el rol Auditor no accede al texto del fundamento';
 const textoLibre = (req: Request, cifrado: Parameters<typeof descifrar>[0]): string =>
   req.usuario!.rol === 'AUDITOR' ? RESERVADO : descifrar(cifrado, clave(req));
 
+// La observacion de la ejecucion es texto libre: se guarda cifrada y se entrega con las mismas reglas que el fundamento.
+const observacionDe = (req: Request, s: object): string | null => {
+  const c = (s as { observacion_cifrada?: string | null }).observacion_cifrada;
+  return c ? textoLibre(req, c) : null;
+};
+
 // ----- Entradas del motor
 
 function aDestino(e: EstablecimientoDoc): DestinoMotor {
@@ -210,6 +216,7 @@ export async function obtenerSolicitud(req: Request, id: string) {
   return {
     ...aResumen(s, n, interno),
     fundamento: textoLibre(req, s.fundamento_cifrado),
+    observacion: observacionDe(req, s),
     pesos: s.pesos,
     evaluaciones: evals.map((e) => ({
       destinoId: e.destino_id, destino: estNombres.get(e.destino_id) ?? e.destino_id, elegible: e.elegible, posicion: e.posicion ?? null,
@@ -307,7 +314,7 @@ export async function ejecutar(req: Request, id: string, observacion: string | u
     const ahora = new Date();
     const r = await SolicitudTraslado.updateOne(
       { _id: s._id, estado: 'APROBADA' },
-      { $set: { estado: 'EJECUTADA', en_tramite: false, ejecutado_por: u.id, ejecutada_en: ahora } },
+      { $set: { estado: 'EJECUTADA', en_tramite: false, ejecutado_por: u.id, ejecutada_en: ahora, observacion_cifrada: observacion ? cifrar(observacion, clave(req)) : null } },
       { session },
     );
     if (r.modifiedCount !== 1) throw conflicto('La solicitud cambió mientras se registraba la ejecución');
@@ -322,7 +329,7 @@ export async function ejecutar(req: Request, id: string, observacion: string | u
       accion: 'EJECUTAR_TRASLADO', entidad: 'solicitudes_traslado', entidad_id: id, resultado: 'EXITO',
       valor_anterior: { interno_en: s.origen_id, poblacion_origen: origen.poblacion_actual, poblacion_destino: destino.poblacion_actual },
       valor_nuevo: { interno_en: s.destino_id, poblacion_origen: origen.poblacion_actual - 1, poblacion_destino: destino.poblacion_actual + 1 },
-      detalle: observacion ?? null,
+      detalle: observacion ? 'Con observacion: el texto se guarda cifrado en la solicitud' : null,
     }, session);
   });
   return { solicitud: await obtenerSolicitud(req, id), afectados: [s.origen_id, s.destino_id] };

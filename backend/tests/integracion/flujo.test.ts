@@ -263,6 +263,18 @@ describe('Flujo del traslado con segregación de funciones (RF-11 a RF-24)', () 
     expect(propio.body.fundamento).toMatch(/Lurigancho supera/);
   });
 
+  it('la observacion de la ejecucion se guarda cifrada y no queda en claro en la auditoria', async () => {
+    const crudo = await mongoose.connection.collection('solicitudes_traslado').findOne({ _id: new mongoose.Types.ObjectId(solicitudId) });
+    expect(crudo!.observacion_cifrada).toMatch(/^v1:/);
+    expect(JSON.stringify(crudo)).not.toMatch(/Traslado realizado/);
+    const reg = await Auditoria.findOne({ accion: 'EJECUTAR_TRASLADO', entidad_id: solicitudId }).lean();
+    expect(JSON.stringify(reg)).not.toMatch(/Traslado realizado/);
+    const r = await request(app).get('/api/traslados/' + solicitudId).set('Authorization', central2).expect(200);
+    expect(r.body.observacion).toBe('Traslado realizado');
+    const a = await request(app).get('/api/traslados/' + solicitudId).set('Authorization', auditor).expect(200);
+    expect(a.body.observacion).toMatch(/^Reservado/);
+  });
+
   it('rechaza con motivo obligatorio (RF-22)', async () => {
     const otro = await Interno.findOne({ establecimiento_id: 'EP-HUARAL' }).lean();
     const s = await request(app).post('/api/traslados').set('Authorization', regionalLima)
