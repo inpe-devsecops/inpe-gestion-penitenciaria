@@ -4,7 +4,7 @@
 // Cada etapa deja una entrada en la auditoría.
 import type { Request } from 'express';
 import type { ClientSession, Types } from 'mongoose';
-import { CAUSAL_LABEL, type CausalTraslado, type EstadoSolicitud } from '../../dominio/constantes';
+import { CAUSAL_LABEL, CAUSALES_PERMITIDAS_PROCESADOS, type CausalTraslado, type EstadoSolicitud } from '../../dominio/constantes';
 import { auditar } from '../../lib/auditoria';
 import { conflicto, ErrorApi, noEncontrado, reglaDeNegocio, sinPermiso } from '../../lib/errores';
 import { conTransaccion } from '../../lib/transaccion';
@@ -82,6 +82,11 @@ export function filaEvaluacion(solicitudId: Types.ObjectId, r: ResultadoDestino,
 
 export async function crearSolicitud(req: Request, datos: { internoId: string; causal: CausalTraslado; fundamento: string }) {
   const { interno, origen } = await internoParaSolicitar(req, datos.internoId);
+  // Art. 159: el traslado de procesados esta prohibido salvo por las causales que el reglamento admite
+  if (interno.situacion_juridica === 'PROCESADO' && !CAUSALES_PERMITIDAS_PROCESADOS.includes(datos.causal)) {
+    await auditar(req, { accion: 'SOLICITAR_TRASLADO', entidad: 'internos', entidad_id: datos.internoId, resultado: 'FALLIDO', detalle: 'Procesado: causal no permitida por el art. 159' });
+    throw reglaDeNegocio('Un interno procesado solo puede trasladarse por las causales que el art. 159 permite (orden judicial, salud o seguridad)');
+  }
   const abierta = await SolicitudTraslado.findOne({ interno_id: interno._id, en_tramite: true }, { codigo: 1 }).lean();
   if (abierta) throw conflicto(`El interno ya tiene un traslado en trámite (${abierta.codigo})`);
 
