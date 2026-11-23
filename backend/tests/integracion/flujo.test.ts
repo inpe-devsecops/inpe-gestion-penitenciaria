@@ -50,6 +50,35 @@ describe('Panel e indicadores (RF-04, RF-05, RNF-14, RNF-15)', () => {
   });
 });
 
+describe('Indicadores de sobrepoblacion por rol y por corte (RF-04 a RF-06, RNF-14)', () => {
+  const r2 = (v: number) => Math.round(v * 100) / 100;
+  const formula = (poblacion: number, capacidad: number) => r2(((poblacion - capacidad) / capacidad) * 100);
+
+  it('cada porcentaje del panel coincide con la formula del informe recalculada a mano', async () => {
+    const r = await request(app).get('/api/panel').set('Authorization', central).expect(200);
+    expect(r.body.masHacinados.length).toBeGreaterThan(0);
+    for (const e of r.body.masHacinados) expect(e.hacinamientoPct).toBe(formula(e.poblacion, e.capacidad));
+    for (const o of r.body.porOficina) expect(o.hacinamientoPct).toBe(formula(o.poblacion, o.capacidad));
+    expect(r.body.totales.hacinamientoPct).toBe(formula(r.body.totales.poblacion, r.body.totales.capacidad));
+  });
+
+  it('un director solo ve los indicadores de su establecimiento', async () => {
+    const r = await request(app).get('/api/panel').set('Authorization', directorLurigancho).expect(200);
+    expect(r.body.totales.establecimientos).toBe(1);
+    expect(r.body.porOficina).toHaveLength(1);
+    expect(r.body.masHacinados).toHaveLength(1);
+    expect(r.body.masHacinados[0].id).toBe('EP-LURIGANCHO');
+    expect(r.body.totales.poblacion).toBe(r.body.masHacinados[0].poblacion);
+  });
+
+  it('la serie historica de un establecimiento sale ordenada por fecha y sin cortes repetidos', async () => {
+    const r = await request(app).get('/api/establecimientos/EP-LURIGANCHO/serie').set('Authorization', central).expect(200);
+    const cortes: string[] = r.body.map((p: { corte: string }) => p.corte);
+    expect(cortes).toEqual([...cortes].sort());
+    expect(new Set(cortes).size).toBe(cortes.length);
+  });
+});
+
 describe('Alertas (RF-07 a RF-09)', () => {
   it('genera alertas al cargar los datos y no las duplica al reevaluar', async () => {
     const antes = await Alerta.countDocuments({ vigente: true });
