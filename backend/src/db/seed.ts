@@ -172,7 +172,7 @@ async function trasladosDeEjemplo(
   ests: { _id: string; nombre: string; oficina_id: string; ubicacion: { latitud: number; longitud: number }; capacidad_oficial: number;
     poblacion_actual: number; techo_seguridad: TechoSeguridad; regimenes_admitidos: Clasificacion[]; genero_poblacion: string;
     fases_tratamiento: FaseTratamiento[]; proporcion_alto_riesgo: number }[],
-  internos: { _id: string; sexo: string; clasificacion: Clasificacion; fase_tratamiento: FaseTratamiento; region_procedencia: string; establecimiento_id: string }[],
+  internos: { _id: string; sexo: string; clasificacion: Clasificacion; fase_tratamiento: FaseTratamiento; situacion_juridica: string; region_procedencia: string; establecimiento_id: string }[],
   usuarios: { _id: string; username: string; rol: string }[],
   ahora: Date,
 ) {
@@ -193,9 +193,9 @@ async function trasladosDeEjemplo(
     { penal: /E\.P\. de Tacna/, regional: 'regional.sur', causal: 'HACINAMIENTO',
       fundamento: 'Tacna es el establecimiento más hacinado del país (438 %); se prioriza la redistribución de internos aptos.',
       decision: { por: 'admin.central2', resultado: 'APROBADA', fundamento: 'Se aprueba el destino recomendado por el motor: tiene cupo libre y admite el régimen del interno.' } },
-    { penal: /del Callao/, regional: 'regional.lima', causal: 'OTROS',
+    { penal: /del Callao/, regional: 'regional.lima', causal: 'PROGRESION_TRATAMIENTO',
       fundamento: 'Solicitud registrada para demostrar el rechazo con fundamento obligatorio por parte del administrador central.',
-      decision: { por: 'admin.central', resultado: 'RECHAZADA', fundamento: 'No se acredita una causal específica del art. 159 que justifique el traslado en este momento.' } },
+      decision: { por: 'admin.central', resultado: 'RECHAZADA', fundamento: 'No se acredita la progresión en el tratamiento que justifique el traslado en este momento.' } },
   ];
 
   let k = 0;
@@ -203,7 +203,7 @@ async function trasladosDeEjemplo(
     const origen = ests.find((e) => c.penal.test(e.nombre));
     if (!origen) continue;
     // Primer interno del establecimiento con al menos un destino elegible
-    const candidato = internos.filter((i) => i.establecimiento_id === origen._id).map((i) => {
+    const candidato = internos.filter((i) => i.establecimiento_id === origen._id && i.situacion_juridica === 'SENTENCIADO').map((i) => {
       const s = sede.get(i.region_procedencia);
       return { i, r: evaluarDestinos({ codigo: i._id, sexo: i.sexo as 'M' | 'F', clasificacion: i.clasificacion, fase: i.fase_tratamiento,
         regionProcedencia: s?.nombre ?? i.region_procedencia, sedeProcedencia: s?.sede ?? null, establecimientoId: i.establecimiento_id }, destinos, config) };
