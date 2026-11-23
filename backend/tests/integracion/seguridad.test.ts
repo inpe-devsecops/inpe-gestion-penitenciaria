@@ -29,6 +29,14 @@ describe('Autenticación y sesiones (RNF-01, RNF-03, RNF-04)', () => {
     await request(app).get('/api/auth/me').set('Authorization', token).expect(401);
   });
 
+  it('un usuario desactivado ya no puede usar el token que obtuvo antes (RNF-04)', async () => {
+    const token = await iniciarSesion(app, 'admin.central2');
+    await request(app).get('/api/auth/me').set('Authorization', token).expect(200);
+    await Usuario.updateOne({ username: 'admin.central2' }, { $set: { estado: 'INACTIVO' } });
+    await request(app).get('/api/auth/me').set('Authorization', token).expect(401);
+    await request(app).post('/api/auth/login').send({ username: 'admin.central2', password: PASSWORD }).expect(401);
+  });
+
   it('rechaza un token firmado con otra clave, uno expirado y uno sin sesión registrada', async () => {
     const falso = jwt.sign({ rol: 'ADMIN_CENTRAL' }, 'otra-clave-de-atacante-con-32-caracteres!', { subject: 'USR-0001', jwtid: 'x' });
     await request(app).get('/api/panel').set('Authorization', `Bearer ${falso}`).expect(401);

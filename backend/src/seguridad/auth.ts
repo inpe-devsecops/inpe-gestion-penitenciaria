@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { ROLES, type Rol } from '../dominio/constantes';
-import { Establecimiento, Sesion } from '../modelos';
+import { Establecimiento, Sesion, Usuario } from '../modelos';
 
 export interface UsuarioToken {
   id: string;
@@ -32,10 +32,15 @@ export function emitirToken(u: Omit<UsuarioToken, 'jti'>, secreto: string) {
   return { token, jti, expira: new Date(Date.now() + DURACION_TOKEN_SEG * 1000) };
 }
 
-// La sesión debe existir y no estar revocada (cierre de sesión o bloqueo administrativo).
+// La sesión debe existir, no estar revocada y pertenecer a un usuario activo (cierre de sesión o bloqueo administrativo).
 export type VerificarSesion = (jti: string, usuarioId: string) => Promise<boolean>;
-export const sesionVigente: VerificarSesion = async (jti, usuarioId) =>
-  Boolean(await Sesion.exists({ _id: jti, usuario_id: usuarioId, revocada: false, expira: { $gt: new Date() } }));
+export const sesionVigente: VerificarSesion = async (jti, usuarioId) => {
+  const [sesion, usuarioActivo] = await Promise.all([
+    Sesion.exists({ _id: jti, usuario_id: usuarioId, revocada: false, expira: { $gt: new Date() } }),
+    Usuario.exists({ _id: usuarioId, estado: 'ACTIVO' }),
+  ]);
+  return Boolean(sesion && usuarioActivo);
+};
 
 // Mediación completa: firma, vigencia y revocación se comprueban en CADA petición (RNF-01, RNF-04).
 export function autenticar(secreto: string, verificarSesion: VerificarSesion = sesionVigente) {
