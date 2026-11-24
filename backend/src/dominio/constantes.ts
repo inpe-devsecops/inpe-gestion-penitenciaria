@@ -43,9 +43,16 @@ export type Sexo = (typeof SEXOS)[number];
 // ----- Traslados: causales del art. 159 del Reglamento del Código de Ejecución Penal (D.S. 015-2003-JUS)
 export const CAUSALES_TRASLADO = [
   'ORDEN_JUDICIAL', 'PROGRESION_TRATAMIENTO', 'REGRESION_TRATAMIENTO', 'INTENTO_FUGA', 'APERTURA_ESTABLECIMIENTO',
-  'HACINAMIENTO', 'ACERCAMIENTO_FAMILIAR', 'RAZONES_SALUD', 'OTROS',
+  'HACINAMIENTO', 'ACERCAMIENTO_FAMILIAR', 'RAZONES_SALUD', 'SEGURIDAD_PERSONAL', 'SEGURIDAD_PENITENCIARIA',
 ] as const;
 export type CausalTraslado = (typeof CAUSALES_TRASLADO)[number];
+
+// Art. 159 (D.S. 003-2011-JUS): el traslado de procesados esta prohibido salvo por estas causales.
+// El 159.4 solo admite procesados en establecimientos concesionados; el catalogo no lo distingue y por
+// prudencia se excluye.
+export const CAUSALES_PERMITIDAS_PROCESADOS: readonly CausalTraslado[] = [
+  'ORDEN_JUDICIAL', 'RAZONES_SALUD', 'SEGURIDAD_PERSONAL', 'SEGURIDAD_PENITENCIARIA',
+];
 
 export const CAUSAL_LABEL: Record<CausalTraslado, string> = {
   ORDEN_JUDICIAL: 'Orden judicial',
@@ -56,7 +63,8 @@ export const CAUSAL_LABEL: Record<CausalTraslado, string> = {
   HACINAMIENTO: 'Hacinamiento del establecimiento',
   ACERCAMIENTO_FAMILIAR: 'Acercamiento al entorno familiar',
   RAZONES_SALUD: 'Razones de salud',
-  OTROS: 'Otras causales justificadas',
+  SEGURIDAD_PERSONAL: 'Seguridad personal, a solicitud del interno',
+  SEGURIDAD_PENITENCIARIA: 'Seguridad penitenciaria (resolución regional)',
 };
 
 // Flujo con segregación de funciones: registra (regional) → evalúa (motor) → decide (central) → ejecuta (director)

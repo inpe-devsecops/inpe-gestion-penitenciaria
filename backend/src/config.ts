@@ -12,6 +12,8 @@ const esquema = z.object({
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
   ALERT_JOB_INTERVAL_MIN: z.coerce.number().int().min(0).default(15),
   MIGRAR_AL_INICIAR: z.enum(['true', 'false']).default('true'),
+  // Render lo define solo en cada despliegue: el commit que está corriendo
+  RENDER_GIT_COMMIT: z.string().regex(/^[0-9a-f]{7,40}$/).optional(),
 });
 
 export interface Config {
@@ -25,6 +27,8 @@ export interface Config {
   intervaloAlertasMin: number;
   /** false en producción: la API usa un usuario sin permisos sobre la estructura (ver SECURITY.md). */
   migrarAlIniciar: boolean;
+  /** Commit desplegado (7 caracteres). El smoke test del pipeline lo compara con el commit recién mergeado. */
+  version?: string;
 }
 
 // Falla al iniciar si falta un secreto: valores por defecto seguros (fail-safe defaults).
@@ -44,5 +48,6 @@ export function cargarConfig(env: NodeJS.ProcessEnv = process.env): Config {
     corsOrigin: e.CORS_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean),
     intervaloAlertasMin: e.ALERT_JOB_INTERVAL_MIN,
     migrarAlIniciar: e.MIGRAR_AL_INICIAR === 'true',
+    version: e.RENDER_GIT_COMMIT?.slice(0, 7),
   };
 }

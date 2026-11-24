@@ -186,7 +186,7 @@ describe('Flujo del traslado con segregación de funciones (RF-11 a RF-24)', () 
   let solicitudId: string;
 
   beforeAll(async () => {
-    internoLima = (await Interno.findOne({ establecimiento_id: 'EP-LURIGANCHO' }).sort({ _id: 1 }).lean())!._id;
+    internoLima = (await Interno.findOne({ establecimiento_id: 'EP-LURIGANCHO', situacion_juridica: 'SENTENCIADO' }).sort({ _id: 1 }).lean())!._id;
   });
 
   it('valida la causal del art. 159 y exige el fundamento (RF-12, RF-13)', async () => {
@@ -224,11 +224,28 @@ describe('Flujo del traslado con segregación de funciones (RF-11 a RF-24)', () 
 
   it('no admite un segundo trámite abierto para el mismo interno', async () => {
     await request(app).post('/api/traslados').set('Authorization', regionalLima)
-      .send({ internoId: internoLima, causal: 'OTROS', fundamento: 'Segundo intento mientras el primero sigue abierto' }).expect(409);
+      .send({ internoId: internoLima, causal: 'REGRESION_TRATAMIENTO', fundamento: 'Segundo intento mientras el primero sigue abierto' }).expect(409);
+  });
+
+  it('rechaza OTROS y toda causal fuera del art. 159 (RF-12)', async () => {
+    const r = await request(app).post('/api/traslados').set('Authorization', regionalLima)
+      .send({ internoId: internoLima, causal: 'OTROS', fundamento: 'Causal generica que no figura en el articulo 159' }).expect(400);
+    expect(r.body.detalles[0].campo).toBe('causal');
+  });
+
+  it('no traslada procesados salvo por las causales que el art. 159 permite', async () => {
+    const procesado = await Interno.findOne({ establecimiento_id: 'EP-LURIGANCHO', situacion_juridica: 'PROCESADO' }).lean();
+    expect(procesado).toBeTruthy();
+    const r = await request(app).post('/api/traslados').set('Authorization', regionalLima)
+      .send({ internoId: procesado!._id, causal: 'HACINAMIENTO', fundamento: 'Procesado: el hacinamiento no habilita su traslado' }).expect(422);
+    expect(r.body.error).toMatch(/procesado/);
+    expect(await Auditoria.exists({ accion: 'SOLICITAR_TRASLADO', resultado: 'FALLIDO', entidad_id: procesado!._id })).toBeTruthy();
+    await request(app).post('/api/traslados').set('Authorization', regionalLima)
+      .send({ internoId: procesado!._id, causal: 'RAZONES_SALUD', fundamento: 'Atencion medica especializada que el establecimiento no ofrece' }).expect(201);
   });
 
   it('bloquea la autoaprobación en la aplicación y en la base de datos (RF-23, RNF-09)', async () => {
-    const otro = await Interno.findOne({ establecimiento_id: 'EP-CALLAO' }).sort({ _id: -1 }).lean();
+    const otro = await Interno.findOne({ establecimiento_id: 'EP-CALLAO', situacion_juridica: 'SENTENCIADO' }).sort({ _id: -1 }).lean();
     const propia = await request(app).post('/api/traslados').set('Authorization', central)
       .send({ internoId: otro!._id, causal: 'HACINAMIENTO', fundamento: 'Solicitud registrada por el propio administrador central' }).expect(201);
     const r = await request(app).post(`/api/traslados/${propia.body.id}/aprobar`).set('Authorization', central)
@@ -281,7 +298,7 @@ describe('Flujo del traslado con segregación de funciones (RF-11 a RF-24)', () 
   });
 
   it('rechaza con motivo obligatorio (RF-22)', async () => {
-    const otro = await Interno.findOne({ establecimiento_id: 'EP-HUARAL' }).lean();
+    const otro = await Interno.findOne({ establecimiento_id: 'EP-HUARAL', situacion_juridica: 'SENTENCIADO' }).lean();
     const s = await request(app).post('/api/traslados').set('Authorization', regionalLima)
       .send({ internoId: otro!._id, causal: 'ACERCAMIENTO_FAMILIAR', fundamento: 'Solicitud de acercamiento a la familia del interno' }).expect(201);
     await request(app).post(`/api/traslados/${s.body.id}/rechazar`).set('Authorization', central).send({ fundamento: 'corto' }).expect(400);

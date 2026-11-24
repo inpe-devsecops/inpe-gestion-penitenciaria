@@ -96,7 +96,16 @@ Para conservar la identidad en las pantallas nuevas, reutilicen los componentes 
 
 ## Pipeline
 
-Cada push ejecuta: lint, build y pruebas (con MongoDB) → Semgrep → Gitleaks → npm audit → imagen Docker. Al integrar en `main`, además: despliegue a DEV → smoke test → OWASP ZAP → despliegue a PROD. Los despliegues se activan al configurar en GitHub los secretos `RENDER_DEPLOY_HOOK_DEV` y `RENDER_DEPLOY_HOOK_PROD`, y la variable `DEV_URL`.
+Cada push ejecuta: lint, build y pruebas (con MongoDB) → Semgrep → Gitleaks → npm audit → imagen Docker. Al integrar en `main`, además: despliegue a DEV → smoke test → OWASP ZAP → despliegue a PROD. Son 4 servicios en Render (API y frontend, en DEV y en PROD), con Auto-Deploy apagado: solo despliega el pipeline mediante Deploy Hooks guardados como secretos de GitHub.
+
+| Servicio | Secreto (deploy hook) | Variable (URL pública) |
+|---|---|---|
+| API de Desarrollo | `RENDER_DEPLOY_HOOK_DEV` | `DEV_URL` |
+| Frontend de Desarrollo | `RENDER_DEPLOY_HOOK_FRONT_DEV` | `FRONT_DEV_URL` |
+| API de Producción | `RENDER_DEPLOY_HOOK_PROD` | `PROD_URL` |
+| Frontend de Producción | `RENDER_DEPLOY_HOOK_FRONT_PROD` | `FRONT_PROD_URL` |
+
+El smoke test (`scripts/smoke-test.sh`) espera hasta que la API (`/health`) y la página (`<meta name="version">`) informen el commit recién integrado; si no llega o la página no carga, el pipeline se corta y no pasa al siguiente ambiente. Render entrega ese commit en `RENDER_GIT_COMMIT`.
 
 ## Origen
 
