@@ -121,6 +121,29 @@ export const MIGRACIONES: Migracion[] = [
       );
     },
   },
+  {
+    id: '003_causales_art159',
+    // Una base creada antes de completar el catalogo del art. 159 conserva el validador anterior y rechazaria
+    // SEGURIDAD_PERSONAL y SEGURIDAD_PENITENCIARIA. La 001 no se edita (ya esta aplicada en otras bases): se
+    // reaplica aqui con el catalogo vigente. No modifica datos; si hay solicitudes con una causal fuera del
+    // catalogo (p. ej. la retirada OTROS) se detiene para que se revisen a mano antes de endurecer el validador.
+    async aplicar(db) {
+      const fuera = await db.collection('solicitudes_traslado').countDocuments({ causal: { $nin: [...CAUSALES_TRASLADO] } });
+      if (fuera > 0) {
+        throw new Error(`Hay ${fuera} solicitud(es) de traslado con una causal fuera del art. 159. Revisela(s) antes de migrar: no se modifico ningun dato.`);
+      }
+      await asegurarColeccion(db, 'solicitudes_traslado', { $jsonSchema: {
+        bsonType: 'object',
+        required: ['codigo', 'interno_id', 'origen_id', 'causal', 'fundamento_cifrado', 'estado', 'en_tramite', 'solicitante_id', 'solicitada_en'],
+        properties: {
+          causal: { enum: [...CAUSALES_TRASLADO] },
+          estado: { enum: [...ESTADOS_SOLICITUD] },
+          en_tramite: { bsonType: 'bool' },
+          fundamento_cifrado: cifrado,
+        },
+      } });
+    },
+  },
 ];
 
 export async function migrar(db: Db): Promise<string[]> {
