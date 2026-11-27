@@ -56,7 +56,8 @@ async function internoParaSolicitar(req: Request, internoId: string) {
   const permitido = u.rol === 'ADMIN_CENTRAL' || (u.rol === 'RESPONSABLE_REGIONAL' && puedeVerEstablecimiento(u, origen));
   if (!permitido) {
     await auditar(req, { accion: 'SOLICITAR_TRASLADO', entidad: 'internos', entidad_id: internoId, resultado: 'DENEGADO', detalle: 'Interno fuera del ámbito' });
-    throw sinPermiso('El interno no pertenece a su ámbito');
+    // Mismo 404 que un interno inexistente: no revelar que existe (OWASP API1)
+    throw noEncontrado('Interno');
   }
   return { interno, origen: origen as EstablecimientoDoc };
 }
@@ -178,7 +179,8 @@ async function solicitudVisible(req: Request, id: string) {
   const relacionados = [s.origen_id, s.destino_id, s.destino_recomendado_id].filter(Boolean) as string[];
   if (ids && !relacionados.some((x) => ids.includes(x))) {
     await auditar(req, { accion: 'CONSULTA_TRASLADO', entidad: 'solicitudes_traslado', entidad_id: id, resultado: 'DENEGADO', detalle: 'Fuera del ámbito' });
-    throw sinPermiso('La solicitud no pertenece a su ámbito');
+    // Mismo 404 que una solicitud inexistente: no revelar que existe (OWASP API1)
+    throw noEncontrado('Solicitud de traslado');
   }
   return s as SolicitudDoc;
 }
