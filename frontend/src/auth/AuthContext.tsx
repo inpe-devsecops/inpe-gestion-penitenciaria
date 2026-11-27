@@ -5,7 +5,8 @@ import type { Rol, Sesion } from '../tipos';
 
 interface ValorAuth {
   usuario: Sesion | null;
-  iniciarSesion: (username: string, password: string) => Promise<void>;
+  // codigo: los 6 dígitos de la app de autenticación, solo si la cuenta tiene TOTP activo (#23)
+  iniciarSesion: (username: string, password: string, codigo?: string) => Promise<void>;
   cerrarSesion: () => Promise<void>;
   tieneRol: (...roles: Rol[]) => boolean;
   sesionExpirada: boolean;
@@ -64,8 +65,9 @@ export function ProveedorAuth({ children }: { children: ReactNode }) {
     });
   }, [cliente]);
 
-  const iniciarSesion = useCallback(async (username: string, password: string) => {
-    const r = await api<{ token: string; expiraEn: number; usuario: Sesion }>('/api/auth/login', { metodo: 'POST', cuerpo: { username, password } });
+  const iniciarSesion = useCallback(async (username: string, password: string, codigo?: string) => {
+    const cuerpo = codigo ? { username, password, codigo } : { username, password };
+    const r = await api<{ token: string; expiraEn: number; usuario: Sesion }>('/api/auth/login', { metodo: 'POST', cuerpo });
     const rol = rolDelToken(r.token);
     fijarToken(r.token);
     setSesionExpirada(false);
