@@ -13,6 +13,7 @@ import { NoAutorizado } from './paginas/NoAutorizado';
 import { PanelPrincipal } from './paginas/Panel';
 import { Parametros } from './paginas/Parametros';
 import { Proyecciones } from './paginas/Proyecciones';
+import { Seguridad } from './paginas/Seguridad';
 import { Traslados } from './paginas/Traslados';
 
 export default function App() {
@@ -33,6 +34,7 @@ export default function App() {
         <Route path="/proyecciones" element={<Proyecciones />} />
         <Route path="/parametros" element={<RutaProtegida roles={['ADMIN_CENTRAL', 'AUDITOR']}><Parametros /></RutaProtegida>} />
         <Route path="/auditoria" element={<RutaProtegida roles={['ADMIN_CENTRAL', 'AUDITOR']}><Auditoria /></RutaProtegida>} />
+        <Route path="/seguridad" element={<RutaProtegida roles={['ADMIN_CENTRAL']}><Seguridad /></RutaProtegida>} />
       </Route>
       <Route path="*" element={<Navigate to="/panel" replace />} />
     </Routes>

@@ -13,6 +13,13 @@ export interface Sesion {
   oficina: string | null;
   establecimientoId: string | null;
   establecimiento: string | null;
+  totpActivo?: boolean;
+}
+
+// Respuesta de POST /api/auth/totp/enrolar: el secreto se muestra una sola vez
+export interface EnrolamientoTotp {
+  secreto: string;
+  uri: string;
 }
 
 export interface Paginado<T> {

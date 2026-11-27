@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { mensajeError } from '../api/cliente';
+import { ErrorHttp, mensajeError } from '../api/cliente';
 import { useAuth } from '../auth/AuthContext';
+import { esCodigoTotp, limpiarCodigo } from '../auth/totp';
 import { Mensaje } from '../componentes/Comunes';
 import { MarcaSistema } from '../componentes/MarcaSistema';
 
@@ -20,6 +21,9 @@ export function Login() {
   const ubicacion = useLocation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  // Segundo factor (#23): el campo aparece solo cuando el servidor lo pide (TOTP_REQUERIDO)
+  const [pideCodigo, setPideCodigo] = useState(false);
+  const [codigo, setCodigo] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
   const destino = (ubicacion.state as { desde?: string } | null)?.desde ?? '/panel';
@@ -31,10 +35,15 @@ export function Login() {
     setError(null);
     setEnviando(true);
     try {
-      await iniciarSesion(username.trim(), password);
+      await iniciarSesion(username.trim(), password, pideCodigo ? codigo : undefined);
       navegar(destino, { replace: true });
     } catch (err) {
-      setError(mensajeError(err));
+      if (err instanceof ErrorHttp && err.codigo === 'TOTP_REQUERIDO') {
+        setPideCodigo(true);
+      } else {
+        setError(mensajeError(err));
+        setCodigo('');
+      }
     } finally {
       setEnviando(false);
     }
@@ -49,16 +58,25 @@ export function Login() {
           <p className="login__subtitulo">Sistema de Gestión y Análisis de Población Penitenciaria</p>
           {sesionExpirada && !error && <Mensaje tipo="info">La sesión expiró o fue cerrada. Ingrese nuevamente.</Mensaje>}
           {error && <Mensaje tipo="error">{error}</Mensaje>}
+          {pideCodigo && !error && <Mensaje tipo="info">Esta cuenta usa segundo factor. Ingrese el código de su aplicación de autenticación.</Mensaje>}
           <form onSubmit={(e) => void enviar(e)}>
             <div className="campo">
               <label htmlFor="username">Usuario</label>
-              <input id="username" autoComplete="username" required value={username} onChange={(e) => setUsername(e.target.value)} placeholder="nombre.usuario" />
+              <input id="username" autoComplete="username" required value={username} onChange={(e) => { setUsername(e.target.value); setPideCodigo(false); setCodigo(''); }} placeholder="nombre.usuario" />
             </div>
             <div className="campo">
               <label htmlFor="password">Contraseña</label>
               <input id="password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
             </div>
-            <button type="submit" className="boton boton--primario" style={{ width: '100%' }} disabled={enviando}>
+            {pideCodigo && (
+              <div className="campo">
+                <label htmlFor="codigo">Código de verificación</label>
+                <input id="codigo" inputMode="numeric" autoComplete="one-time-code" required autoFocus maxLength={6}
+                  value={codigo} onChange={(e) => setCodigo(limpiarCodigo(e.target.value))} placeholder="000000" />
+                <p className="campo__ayuda">Escriba los 6 dígitos que muestra su aplicación de autenticación. Cambian cada 30 segundos.</p>
+              </div>
+            )}
+            <button type="submit" className="boton boton--primario" style={{ width: '100%' }} disabled={enviando || (pideCodigo && !esCodigoTotp(codigo))}>
               {enviando ? 'Verificando...' : 'Ingresar'}
             </button>
           </form>
