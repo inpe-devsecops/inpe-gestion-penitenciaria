@@ -268,6 +268,30 @@ describe('Flujo del traslado con segregación de funciones (RF-11 a RF-24)', () 
     expect(ejec.usuario).toBeTruthy();
   });
 
+  it('el auditor consulta el traslado pero no lee el texto libre del fundamento', async () => {
+    const url = '/api/traslados/' + solicitudId;
+    const r = await request(app).get(url).set('Authorization', auditor).expect(200);
+    const texto = JSON.stringify(r.body);
+    expect(texto).not.toMatch(/Lurigancho supera/);
+    expect(texto).not.toMatch(/Se acoge el destino/);
+    expect(r.body.fundamento).toMatch(/^Reservado/);
+    expect(r.body.decision.fundamento).toMatch(/^Reservado/);
+    const propio = await request(app).get(url).set('Authorization', central2).expect(200);
+    expect(propio.body.fundamento).toMatch(/Lurigancho supera/);
+  });
+
+  it('la observacion de la ejecucion se guarda cifrada y no queda en claro en la auditoria', async () => {
+    const crudo = await mongoose.connection.collection('solicitudes_traslado').findOne({ _id: new mongoose.Types.ObjectId(solicitudId) });
+    expect(crudo!.observacion_cifrada).toMatch(/^v1:/);
+    expect(JSON.stringify(crudo)).not.toMatch(/Traslado realizado/);
+    const reg = await Auditoria.findOne({ accion: 'EJECUTAR_TRASLADO', entidad_id: solicitudId }).lean();
+    expect(JSON.stringify(reg)).not.toMatch(/Traslado realizado/);
+    const r = await request(app).get('/api/traslados/' + solicitudId).set('Authorization', central2).expect(200);
+    expect(r.body.observacion).toBe('Traslado realizado');
+    const a = await request(app).get('/api/traslados/' + solicitudId).set('Authorization', auditor).expect(200);
+    expect(a.body.observacion).toMatch(/^Reservado/);
+  });
+
   it('rechaza con motivo obligatorio (RF-22)', async () => {
     const otro = await Interno.findOne({ establecimiento_id: 'EP-HUARAL', situacion_juridica: 'SENTENCIADO' }).lean();
     const s = await request(app).post('/api/traslados').set('Authorization', regionalLima)

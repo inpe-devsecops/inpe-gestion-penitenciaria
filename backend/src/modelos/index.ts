@@ -81,6 +81,7 @@ const solicitudSchema = new Schema({
   origen_id: { type: String, required: true, index: true },
   causal: { type: String, enum: CAUSALES_TRASLADO, required: true },
   fundamento_cifrado: { type: String, required: true },
+  observacion_cifrada: { type: String, default: null },
   estado: { type: String, enum: ESTADOS_SOLICITUD, required: true, index: true },
   // true mientras está EVALUADA o APROBADA: índice único parcial = un solo trámite abierto por interno
   en_tramite: { type: Boolean, required: true },
