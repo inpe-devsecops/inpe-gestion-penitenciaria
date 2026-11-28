@@ -215,6 +215,10 @@ describe('Segundo factor TOTP del administrador central (#23, Tabla 16: Suplanta
   let secreto = '';
   const codigo = (desfase = 0) => codigoTotp(deBase32(secreto), pasoActual() + desfase);
 
+  // Estado inicial explícito: otra prueba de este archivo desactiva a admin.central2 (RNF-04)
+  beforeAll(() => Usuario.updateOne({ username: 'admin.central2' },
+    { $set: { estado: 'ACTIVO', intentos_fallidos: 0, bloqueado_hasta: null } }));
+
   it('solo el administrador central puede enrolar un segundo factor', async () => {
     const token = await iniciarSesion(app, 'director.ep-lurigancho');
     await request(app).post('/api/auth/totp/enrolar').set('Authorization', token).expect(403);
