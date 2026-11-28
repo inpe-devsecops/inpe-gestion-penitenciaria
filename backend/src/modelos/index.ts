@@ -197,6 +197,11 @@ const usuarioSchema = new Schema({
   intentos_fallidos: { type: Number, default: 0 },
   bloqueado_hasta: { type: Date, default: null },
   ultimo_acceso: { type: Date, default: null },
+  // Segundo factor TOTP (#23). El secreto se guarda cifrado con AES-256-GCM (DATA_KEY), nunca en claro.
+  // totp_ultimo_paso evita que un código ya usado sirva otra vez (anti-repetición).
+  totp_secreto_cifrado: { type: String, default: null },
+  totp_activo: { type: Boolean, default: false },
+  totp_ultimo_paso: { type: Number, default: null },
   dato_ficticio: { type: Boolean, default: true },
 }, opciones('usuarios'));
 export const Usuario = mongoose.model('Usuario', usuarioSchema);

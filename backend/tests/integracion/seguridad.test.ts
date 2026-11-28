@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import request from 'supertest';
 import { Auditoria, Establecimiento, Interno, Usuario } from '../../src/modelos';
+import { codigoTotp, deBase32, pasoActual } from '../../src/seguridad/totp';
 import { cerrarBase, config, iniciarSesion, nuevaApp, PASSWORD, prepararBase } from './entorno';
 
 const app = nuevaApp();
@@ -206,5 +207,65 @@ describe('Fichas de internos: ámbito y 404 (aportado por la rama de roles)', ()
     const token = await iniciarSesion(app, 'regional.sur');
     await request(app).post('/api/internos').set('Authorization', token)
       .send({ ...fichaNueva, establecimientoId: 'EP-TACNA' }).expect(403);
+  });
+});
+describe('Segundo factor TOTP del administrador central (#23, Tabla 16: Suplantación)', () => {
+  const login = (cuerpo: Record<string, string>) =>
+    request(app).post('/api/auth/login').send({ username: 'admin.central2', password: PASSWORD, ...cuerpo });
+  let secreto = '';
+  const codigo = (desfase = 0) => codigoTotp(deBase32(secreto), pasoActual() + desfase);
+
+  // Estado inicial explícito: otra prueba de este archivo desactiva a admin.central2 (RNF-04)
+  beforeAll(() => Usuario.updateOne({ username: 'admin.central2' },
+    { $set: { estado: 'ACTIVO', intentos_fallidos: 0, bloqueado_hasta: null } }));
+
+  it('solo el administrador central puede enrolar un segundo factor', async () => {
+    const token = await iniciarSesion(app, 'director.ep-lurigancho');
+    await request(app).post('/api/auth/totp/enrolar').set('Authorization', token).expect(403);
+    await request(app).post('/api/auth/totp/enrolar').expect(401);
+  });
+
+  it('enrola, guarda el secreto cifrado y exige un código válido para activarlo', async () => {
+    const token = await iniciarSesion(app, 'admin.central2');
+    const r = await request(app).post('/api/auth/totp/enrolar').set('Authorization', token).expect(200);
+    secreto = r.body.secreto;
+    expect(r.body.uri).toContain(`secret=${secreto}`);
+    const u = await Usuario.findOne({ username: 'admin.central2' }).lean();
+    expect(u!.totp_secreto_cifrado).toMatch(/^v1:/);
+    expect(u!.totp_secreto_cifrado).not.toContain(secreto);
+    expect(u!.totp_activo).toBe(false);
+    // Mientras no se active, el login sigue funcionando solo con la contraseña
+    await login({}).expect(200);
+
+    await request(app).post('/api/auth/totp/activar').set('Authorization', token).send({ codigo: '000000' === codigo() ? '111111' : '000000' }).expect(400);
+    await request(app).post('/api/auth/totp/activar').set('Authorization', token).send({ codigo: codigo() }).expect(204);
+    await request(app).post('/api/auth/totp/enrolar').set('Authorization', token).expect(409);
+    const me = await request(app).get('/api/auth/me').set('Authorization', token).expect(200);
+    expect(me.body.totpActivo).toBe(true);
+    expect(JSON.stringify(await Auditoria.find({ accion: /^TOTP_/ }).lean())).not.toContain(secreto);
+  });
+
+  it('con TOTP activo, la contraseña correcta sin código válido no recibe token', async () => {
+    const sinCodigo = await login({}).expect(401);
+    expect(sinCodigo.body.codigo).toBe('TOTP_REQUERIDO');
+    expect(sinCodigo.body.token).toBeUndefined();
+    const malo = codigo(1) === '123456' ? '654321' : '123456';
+    const conMalo = await login({ codigo: malo }).expect(401);
+    expect(conMalo.body.token).toBeUndefined();
+    expect(await Auditoria.exists({ accion: 'LOGIN', detalle: 'Código TOTP inválido o ya usado' })).toBeTruthy();
+  });
+
+  it('entra con el código correcto, pero el mismo código no sirve dos veces', async () => {
+    // El código del periodo siguiente (dentro de la tolerancia): el actual ya se consumió al activar
+    const valido = codigo(1);
+    const ok = await login({ codigo: valido }).expect(200);
+    expect(ok.body.token).toBeDefined();
+    await login({ codigo: valido }).expect(401);
+  });
+
+  it('los códigos fallidos cuentan para el bloqueo de la cuenta', async () => {
+    await Usuario.updateOne({ username: 'admin.central2' }, { $set: { intentos_fallidos: 0 } });
+    for (let i = 0; i < 4; i++) await login({ codigo: '000001' }).expect(401);
+    await login({ codigo: '000001' }).expect(423);
   });
 });
