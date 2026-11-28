@@ -22,6 +22,8 @@ const ANALISIS: readonly EnlaceNavegacion[] = [
   { a: '/proyecciones', texto: 'Proyecciones', icono: '◪', roles: TODOS_LOS_ROLES },
   { a: '/parametros', texto: 'Parámetros', icono: '⚙', roles: ['ADMIN_CENTRAL', 'AUDITOR'] },
   { a: '/auditoria', texto: 'Auditoría', icono: '⌕', roles: ['ADMIN_CENTRAL', 'AUDITOR'] },
+  // Segundo factor TOTP (#23): solo el rol de mayor privilegio lo configura
+  { a: '/seguridad', texto: 'Seguridad', icono: '⚿', roles: ['ADMIN_CENTRAL'] },
 ];
 
 export function obtenerNavegacion(rol: Rol) {
