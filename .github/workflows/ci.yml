@@ -80,9 +80,37 @@ jobs:
       - name: Gitleaks
         run: docker run --rm -v "${{ github.workspace }}:/repo" zricethezav/gitleaks:latest detect --source /repo --no-git --redact -v
 
+  # Inventario de componentes (SBOM): "no se puede proteger lo que no se conoce". Incluye las dependencias
+  # transitivas de producción de la API y de la interfaz, con su versión, purl y hash, en formato CycloneDX.
+  sbom:
+    name: Inventario de dependencias (SBOM CycloneDX)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Generar el SBOM desde los lockfiles (dependencias directas y transitivas)
+        run: |
+          mkdir -p sbom
+          echo "| Componente | Paquetes en el SBOM |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|" >> "$GITHUB_STEP_SUMMARY"
+          for d in backend frontend; do
+            (cd "$d" && npm sbom --sbom-format cyclonedx --package-lock-only --omit dev) > "sbom/sbom-$d.cdx.json"
+            total=$(jq '.components | length' "sbom/sbom-$d.cdx.json")
+            test "$total" -gt 0
+            echo "| $d | $total |" >> "$GITHUB_STEP_SUMMARY"
+          done
+      - name: Publicar el SBOM como artefacto de la ejecución
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-cyclonedx-${{ github.sha }}
+          path: sbom/
+          retention-days: 90
+
   imagen:
     name: Imagen Docker del backend
-    needs: [backend, frontend, sast, secretos]
+    needs: [backend, frontend, sast, secretos, sbom]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
